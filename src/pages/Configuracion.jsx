@@ -586,9 +586,10 @@ function NuclearTab() {
       setMensaje(r.data.mensaje)
       setConfirmacion('')
     } catch (e) {
-      setError(e.response?.data?.detail || 'Error')
-      setLoading(false)
-    }
+  console.log('Error nuclear:', e)
+  setError(e.response?.data?.detail || e.message || 'Error desconocido')
+  setLoading(false)
+}
   }
 
   return (
