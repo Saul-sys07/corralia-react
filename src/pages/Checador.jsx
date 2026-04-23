@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
 function Checador({ usuario }) {
   const esAdmin = usuario.rol === 'admin'
-
   if (esAdmin) return <HistorialAdmin />
   return <CheckerTrabajador usuario={usuario} />
 }
@@ -12,6 +11,10 @@ function CheckerTrabajador({ usuario }) {
   const [estado, setEstado] = useState(null)
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState('')
+  const [mostrarCamara, setMostrarCamara] = useState(false)
+  const [accionPendiente, setAccionPendiente] = useState(null)
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
 
   const cargarEstado = async () => {
     const r = await api.get('/checador/estado')
@@ -20,22 +23,61 @@ function CheckerTrabajador({ usuario }) {
 
   useEffect(() => { cargarEstado() }, [])
 
-  const registrarEntrada = async () => {
-    setLoading(true)
+  const abrirCamara = async (accion) => {
+    setAccionPendiente(accion)
+    setMostrarCamara(true)
     try {
-      await api.post('/checador/entrada')
-      setMensaje('✅ Entrada registrada')
-      cargarEstado()
-    } finally {
-      setLoading(false)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' } // camara frontal
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+    } catch (e) {
+      // Si no hay camara, registrar sin foto
+      setMostrarCamara(false)
+      registrar(accion, null)
     }
   }
 
-  const registrarSalida = async () => {
+  const tomarFoto = async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+    const base64 = canvas.toDataURL('image/jpeg').split(',')[1]
+
+    // Cerrar camara
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    setMostrarCamara(false)
+
+    await registrar(accionPendiente, base64)
+  }
+
+  const cancelarFoto = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    setMostrarCamara(false)
+    setAccionPendiente(null)
+  }
+
+  const registrar = async (accion, fotoBase64) => {
     setLoading(true)
     try {
-      await api.post('/checador/salida')
-      setMensaje('✅ Salida registrada')
+      if (accion === 'entrada') {
+        await api.post('/checador/entrada')
+      } else {
+        await api.post('/checador/salida')
+      }
+
+      if (fotoBase64) {
+        await api.post('/checador/foto', {
+          foto_base64: fotoBase64,
+          tipo: accion
+        })
+      }
+
+      setMensaje(`✅ ${accion === 'entrada' ? 'Entrada' : 'Salida'} registrada`)
       cargarEstado()
     } finally {
       setLoading(false)
@@ -45,6 +87,29 @@ function CheckerTrabajador({ usuario }) {
   if (!estado) return <p style={{ padding: '16px', color: '#888' }}>Cargando...</p>
 
   const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+
+  // Pantalla de cámara
+  if (mostrarCamara) {
+    return (
+      <div style={{ padding: '16px', textAlign: 'center' }}>
+        <h3 style={{ margin: '0 0 12px' }}>📸 Toma tu foto</h3>
+        <video ref={videoRef} autoPlay playsInline
+          style={{ width: '100%', borderRadius: '12px', marginBottom: '12px', maxHeight: '400px', objectFit: 'cover' }} />
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={tomarFoto} style={{
+            flex: 1, padding: '14px', background: '#2E7D32',
+            color: 'white', border: 'none', borderRadius: '10px',
+            fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+          }}>📸 Tomar foto</button>
+          <button onClick={cancelarFoto} style={{
+            flex: 1, padding: '14px', background: '#f0f0f0',
+            color: '#555', border: 'none', borderRadius: '10px',
+            fontSize: '16px', cursor: 'pointer'
+          }}>Cancelar</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: '16px', textAlign: 'center' }}>
@@ -60,24 +125,19 @@ function CheckerTrabajador({ usuario }) {
           background: '#f1f8e9', border: '1px solid #c5e1a5',
           borderRadius: '10px', padding: '12px', marginBottom: '20px',
           fontWeight: '600', color: '#2E7D32'
-        }}>
-          {mensaje}
-        </div>
+        }}>{mensaje}</div>
       )}
 
       {!estado.checo_entrada && (
-        <div>
-          <p style={{ color: '#888', marginBottom: '16px' }}>No has registrado tu entrada hoy</p>
-          <button onClick={registrarEntrada} disabled={loading}
-            style={{
-              width: '100%', padding: '20px',
-              background: loading ? '#ccc' : '#2E7D32',
-              color: 'white', border: 'none', borderRadius: '12px',
-              fontSize: '18px', fontWeight: '700', cursor: 'pointer'
-            }}>
-            {loading ? 'Registrando...' : '✅ Registrar Entrada'}
-          </button>
-        </div>
+        <button onClick={() => abrirCamara('entrada')} disabled={loading}
+          style={{
+            width: '100%', padding: '20px',
+            background: loading ? '#ccc' : '#2E7D32',
+            color: 'white', border: 'none', borderRadius: '12px',
+            fontSize: '18px', fontWeight: '700', cursor: 'pointer'
+          }}>
+          {loading ? 'Registrando...' : '✅ Registrar Entrada'}
+        </button>
       )}
 
       {estado.checo_entrada && !estado.checo_salida && (
@@ -88,7 +148,7 @@ function CheckerTrabajador({ usuario }) {
           }}>
             <p style={{ margin: 0, color: '#2E7D32', fontWeight: '600' }}>✅ Entrada registrada hoy</p>
           </div>
-          <button onClick={registrarSalida} disabled={loading}
+          <button onClick={() => abrirCamara('salida')} disabled={loading}
             style={{
               width: '100%', padding: '20px',
               background: loading ? '#ccc' : '#C62828',
@@ -131,12 +191,11 @@ function HistorialAdmin() {
   }, [])
 
   const filtradas = filtro
-    ? asistencias.filter(a => a.nombre.toLowerCase().includes(filtro.toLowerCase()))
+    ? asistencias.filter(a => a.nombre?.toLowerCase().includes(filtro.toLowerCase()))
     : asistencias
 
-  // Agrupar por trabajador para contar días
   const resumen = asistencias.reduce((acc, a) => {
-    if (!a.nombre) return acc  // ignorar sin nombre
+    if (!a.nombre) return acc
     if (!acc[a.nombre]) acc[a.nombre] = 0
     acc[a.nombre]++
     return acc
@@ -148,7 +207,6 @@ function HistorialAdmin() {
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px' }}>⏰ Asistencias</h2>
 
-      {/* Resumen por trabajador */}
       <div style={{ marginBottom: '16px' }}>
         <h4 style={{ margin: '0 0 8px', color: '#444' }}>Días trabajados:</h4>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -164,7 +222,6 @@ function HistorialAdmin() {
         </div>
       </div>
 
-      {/* Filtro */}
       <input type="text" placeholder="Buscar trabajador..."
         value={filtro} onChange={e => setFiltro(e.target.value)}
         style={{
@@ -173,7 +230,6 @@ function HistorialAdmin() {
           boxSizing: 'border-box', marginBottom: '16px'
         }} />
 
-      {/* Historial */}
       {filtradas.map((a, i) => (
         <div key={i} style={{
           border: '1px solid #ddd', borderRadius: '10px',
@@ -195,7 +251,6 @@ function HistorialAdmin() {
             }} />
           </div>
 
-          {/* Fotos */}
           {(a.foto_entrada || a.foto_salida) && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               {a.foto_entrada && (
