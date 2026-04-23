@@ -582,14 +582,15 @@ function NuclearTab() {
     setLoading(true)
     setError('')
     try {
-     await api.post('/configuracion/nuclear', { confirmacion })
-setMensaje('✅ Sistema limpiado — listo para datos reales') 
+      await api.post('/configuracion/nuclear', { confirmacion })
+      setMensaje('✅ Sistema limpiado — listo para datos reales')
       setConfirmacion('')
     } catch (e) {
-  console.log('Error nuclear:', e)
-  setError(e.response?.data?.detail || e.message || 'Error desconocido')
-  setLoading(false)
-}
+      console.log('Error nuclear:', e)
+      setError(e.response?.data?.detail || e.message || 'Error desconocido')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
