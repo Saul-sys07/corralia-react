@@ -136,6 +136,7 @@ function HistorialAdmin() {
 
   // Agrupar por trabajador para contar días
   const resumen = asistencias.reduce((acc, a) => {
+    if (!a.nombre) return acc  // ignorar sin nombre
     if (!acc[a.nombre]) acc[a.nombre] = 0
     acc[a.nombre]++
     return acc
