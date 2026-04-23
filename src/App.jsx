@@ -40,6 +40,7 @@ function App() {
     localStorage.removeItem('token')
     localStorage.removeItem('usuario')
     setUsuario(null)
+    setPagina('mapa')
   }
 
   const handleAccion = (accion, corral) => {
