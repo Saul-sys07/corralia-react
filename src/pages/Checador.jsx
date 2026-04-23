@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 
 function Checador({ usuario }) {
-  const esAdmin = ['admin', 'encargado_general'].includes(usuario.rol)
+  const esAdmin = usuario.rol === 'admin'
 
   if (esAdmin) return <HistorialAdmin />
   return <CheckerTrabajador usuario={usuario} />
