@@ -582,8 +582,8 @@ function NuclearTab() {
     setLoading(true)
     setError('')
     try {
-      const r = await api.post('/configuracion/nuclear', { confirmacion })
-      setMensaje(r.data.mensaje)
+     await api.post('/configuracion/nuclear', { confirmacion })
+setMensaje('✅ Sistema limpiado — listo para datos reales') 
       setConfirmacion('')
     } catch (e) {
   console.log('Error nuclear:', e)
