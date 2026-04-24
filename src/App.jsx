@@ -31,7 +31,7 @@ function App() {
   const ROLES_CON_CHECADOR = ['parideras', 'crecimiento', 'gestacion', 'ayudante_general']
 
   useEffect(() => {
-    if (usuario && ROLES_CON_CHECADOR.includes(usuario.rol)) {
+    if (usuario && [...ROLES_CON_CHECADOR, 'encargado_general'].includes(usuario.rol)) {
       api.get('/checador/estado').then(r => setYaCheco(r.data.checo_entrada))
     }
   }, [usuario])
