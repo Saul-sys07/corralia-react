@@ -100,30 +100,21 @@ function Configuracion() {
       )}
 
       {tab === 'corrales' && (
-        <div>
-          <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>
-            {corrales.length} corrales registrados
-          </p>
-          {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
-            <div key={zona} style={{ marginBottom: '16px' }}>
-              <h4 style={{ margin: '0 0 8px', color: '#444' }}>{zona}</h4>
-              {corrales.filter(c => c.zona === zona).map((c, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  padding: '10px 12px', background: '#f9f9f9',
-                  borderRadius: '8px', marginBottom: '4px', fontSize: '14px'
-                }}>
-                  <span><strong>{c.nombre}</strong> — {c.tipo}</span>
-                  <span style={{ color: '#888' }}>
-                    Cap: {c.capacidad_max} · {parseFloat(c.area_m2).toFixed(1)}m²
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))}
-          <CrearCorral onRefresh={cargar} setMensaje={setMensaje} />
-        </div>
-      )}
+  <div>
+    <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>
+      {corrales.length} corrales registrados
+    </p>
+    {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
+      <div key={zona} style={{ marginBottom: '16px' }}>
+        <h4 style={{ margin: '0 0 8px', color: '#444' }}>{zona}</h4>
+        {corrales.filter(c => c.zona === zona).map((c, i) => (
+          <CorralItem key={i} corral={c} onRefresh={cargar} setMensaje={setMensaje} />
+        ))}
+      </div>
+    ))}
+    <CrearCorral onRefresh={cargar} setMensaje={setMensaje} />
+  </div>
+)}
 
       {tab === 'usuarios' && (
         <UsuariosTab usuarios={usuarios} onRefresh={cargar} setMensaje={setMensaje} />
@@ -340,16 +331,19 @@ function CrearCorral({ onRefresh, setMensaje }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const area = largo && ancho ? (largo * ancho).toFixed(2) : 0
+  const area = largo && ancho ? (largo * ancho).toFixed(2) : null
+  const necesitaMedidas = zona === 'Crecimiento'
 
   const confirmar = async () => {
-    if (!nombre || !largo || !ancho || !capacidad) return
+    if (!nombre || !capacidad) return
+    if (necesitaMedidas && (!largo || !ancho)) return
     setLoading(true)
     setError('')
     try {
       await api.post('/configuracion/corrales', {
         nombre, tipo, zona,
-        largo: Number(largo), ancho: Number(ancho),
+        largo: largo ? Number(largo) : null,
+        ancho: ancho ? Number(ancho) : null,
         capacidad_max: Number(capacidad)
       })
       setNombre('')
@@ -368,11 +362,13 @@ function CrearCorral({ onRefresh, setMensaje }) {
   return (
     <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
       <h4 style={{ margin: '0 0 12px' }}>➕ Nuevo corral</h4>
+
       <div style={{ marginBottom: '12px' }}>
         <label style={labelStyle}>Nombre:</label>
         <input type="text" value={nombre} onChange={e => setNombre(e.target.value)}
-          placeholder="Ej: chiquero 9" style={inputStyle} />
+          placeholder="Ej: chiquero 9 o paridera 12" style={inputStyle} />
       </div>
+
       <div style={{ marginBottom: '12px' }}>
         <label style={labelStyle}>Tipo:</label>
         <div style={{ display: 'flex', gap: '6px' }}>
@@ -382,6 +378,7 @@ function CrearCorral({ onRefresh, setMensaje }) {
           ))}
         </div>
       </div>
+
       <div style={{ marginBottom: '12px' }}>
         <label style={labelStyle}>Zona:</label>
         <div style={{ display: 'flex', gap: '6px' }}>
@@ -391,34 +388,47 @@ function CrearCorral({ onRefresh, setMensaje }) {
           ))}
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-        <div>
-          <label style={labelStyle}>Largo (m):</label>
-          <input type="number" min={0} step={0.1} value={largo}
-            onChange={e => setLargo(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Ancho (m):</label>
-          <input type="number" min={0} step={0.1} value={ancho}
-            onChange={e => setAncho(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Capacidad:</label>
-          <input type="number" min={1} value={capacidad}
-            onChange={e => setCapacidad(e.target.value)} style={inputStyle} />
-        </div>
+
+      <div style={{ marginBottom: '12px' }}>
+        <label style={labelStyle}>Capacidad (animales):</label>
+        <input type="number" min={1} value={capacidad}
+          onChange={e => setCapacidad(e.target.value)} style={inputStyle} />
       </div>
-      {area > 0 && (
+
+      {necesitaMedidas && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <label style={labelStyle}>Largo (m):</label>
+            <input type="number" min={0} step={0.1} value={largo}
+              onChange={e => setLargo(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Ancho (m):</label>
+            <input type="number" min={0} step={0.1} value={ancho}
+              onChange={e => setAncho(e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+      )}
+
+      {area && (
         <p style={{ color: '#666', fontSize: '13px', margin: '0 0 12px' }}>
           Área: {area} m²
         </p>
       )}
+
+      {!necesitaMedidas && (
+        <p style={{ color: '#888', fontSize: '12px', margin: '0 0 12px' }}>
+          Parideras y Gestación no requieren medidas
+        </p>
+      )}
+
       {error && <p style={{ color: '#C62828', marginBottom: '8px' }}>{error}</p>}
+
       <button onClick={confirmar}
-        disabled={loading || !nombre || !largo || !ancho || !capacidad}
+        disabled={loading || !nombre || !capacidad || (necesitaMedidas && (!largo || !ancho))}
         style={{
           width: '100%', padding: '12px',
-          background: loading || !nombre || !largo || !ancho || !capacidad ? '#ccc' : '#1976D2',
+          background: loading || !nombre || !capacidad ? '#ccc' : '#1976D2',
           color: 'white', border: 'none', borderRadius: '8px',
           fontWeight: '700', cursor: 'pointer'
         }}>
@@ -428,6 +438,131 @@ function CrearCorral({ onRefresh, setMensaje }) {
   )
 }
 
+function EditarCorral({ corral, onGuardar, onCancelar }) {
+  const TIPOS_CORRAL = ['Paridera', 'Comunal', 'Semental']
+  const ZONAS = ['Parideras', 'Gestacion', 'Crecimiento']
+
+  const [nombre, setNombre] = useState(corral.nombre)
+  const [tipo, setTipo] = useState(corral.tipo)
+  const [zona, setZona] = useState(corral.zona)
+  const [capacidad, setCapacidad] = useState(corral.capacidad_max)
+  const [largo, setLargo] = useState(corral.largo || '')
+  const [ancho, setAncho] = useState(corral.ancho || '')
+  const [loading, setLoading] = useState(false)
+
+  const necesitaMedidas = zona === 'Crecimiento'
+
+  const guardar = async () => {
+    setLoading(true)
+    try {
+      await api.put(`/configuracion/corrales/${corral.id}`, {
+        nombre, tipo, zona,
+        capacidad_max: Number(capacidad),
+        largo: largo ? Number(largo) : null,
+        ancho: ancho ? Number(ancho) : null
+      })
+      onGuardar()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{
+      border: '2px solid #1976D2', borderRadius: '10px',
+      padding: '12px', marginBottom: '8px', background: '#e3f2fd'
+    }}>
+      <div style={{ marginBottom: '8px' }}>
+        <label style={labelStyle}>Nombre:</label>
+        <input type="text" value={nombre} onChange={e => setNombre(e.target.value)}
+          style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '8px' }}>
+        <label style={labelStyle}>Tipo:</label>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {TIPOS_CORRAL.map(t => (
+            <button key={t} onClick={() => setTipo(t)}
+              style={chipStyle(tipo === t)}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: '8px' }}>
+        <label style={labelStyle}>Zona:</label>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {ZONAS.map(z => (
+            <button key={z} onClick={() => setZona(z)}
+              style={chipStyle(zona === z)}>{z}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: '8px' }}>
+        <label style={labelStyle}>Capacidad:</label>
+        <input type="number" min={1} value={capacidad}
+          onChange={e => setCapacidad(e.target.value)} style={inputStyle} />
+      </div>
+      {necesitaMedidas && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+          <div>
+            <label style={labelStyle}>Largo (m):</label>
+            <input type="number" step={0.1} value={largo}
+              onChange={e => setLargo(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Ancho (m):</label>
+            <input type="number" step={0.1} value={ancho}
+              onChange={e => setAncho(e.target.value)} style={inputStyle} />
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button onClick={guardar} disabled={loading} style={{
+          flex: 1, padding: '10px', background: '#1976D2',
+          color: 'white', border: 'none', borderRadius: '8px',
+          fontWeight: '700', cursor: 'pointer'
+        }}>
+          {loading ? 'Guardando...' : '💾 Guardar'}
+        </button>
+        <button onClick={onCancelar} style={{
+          flex: 1, padding: '10px', background: '#f0f0f0',
+          color: '#555', border: 'none', borderRadius: '8px', cursor: 'pointer'
+        }}>Cancelar</button>
+      </div>
+    </div>
+  )
+}
+function CorralItem({ corral, onRefresh, setMensaje }) {
+  const [editando, setEditando] = useState(false)
+
+  if (editando) {
+    return (
+      <EditarCorral
+        corral={corral}
+        onGuardar={() => { setEditando(false); onRefresh(); setMensaje(`✅ ${corral.nombre} actualizado`) }}
+        onCancelar={() => setEditando(false)}
+      />
+    )
+  }
+
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '10px 12px', background: '#f9f9f9',
+      borderRadius: '8px', marginBottom: '4px', fontSize: '14px'
+    }}>
+      <div>
+        <strong>{corral.nombre}</strong> — {corral.tipo}
+        <div style={{ fontSize: '12px', color: '#888' }}>
+          Cap: {corral.capacidad_max} {corral.area_m2 ? `· ${parseFloat(corral.area_m2).toFixed(1)}m²` : ''}
+        </div>
+      </div>
+      <button onClick={() => setEditando(true)} style={{
+        padding: '6px 12px', background: '#1976D2', color: 'white',
+        border: 'none', borderRadius: '6px', cursor: 'pointer',
+        fontSize: '12px', fontWeight: '600'
+      }}>✏️ Editar</button>
+    </div>
+  )
+}
 function UsuariosTab({ usuarios, onRefresh, setMensaje }) {
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [nombre, setNombre] = useState('')
@@ -642,6 +777,7 @@ function NuclearTab() {
         </div>
       )}
     </div>
+    
   )
 }
 export default Configuracion
