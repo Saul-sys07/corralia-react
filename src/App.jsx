@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Login from './pages/Login'
 import Mapa from './pages/Mapa'
 import Muerte from './pages/Muerte'
@@ -15,6 +15,7 @@ import Clientes from './pages/Clientes'
 import Ventas from './pages/Ventas'
 import Configuracion from './pages/Configuracion'
 import PrimerAcceso from './pages/PrimerAcceso'
+import api from './services/api'
 
 function App() {
   const [usuario, setUsuario] = useState(() => {
@@ -25,6 +26,15 @@ function App() {
   const [corralSeleccionado, setCorralSeleccionado] = useState(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [tokenTemporal, setTokenTemporal] = useState(null)
+  const [yaCheco, setYaCheco] = useState(null)
+
+  const ROLES_CON_CHECADOR = ['parideras', 'crecimiento', 'gestacion', 'ayudante_general']
+
+  useEffect(() => {
+    if (usuario && ROLES_CON_CHECADOR.includes(usuario.rol)) {
+      api.get('/checador/estado').then(r => setYaCheco(r.data.checo_entrada))
+    }
+  }, [usuario])
 
   const handleLogin = (u, tokenTemporal) => {
     if (u.primer_acceso) {
@@ -41,6 +51,7 @@ function App() {
     localStorage.removeItem('usuario')
     setUsuario(null)
     setPagina('mapa')
+    setYaCheco(null)
   }
 
   const handleAccion = (accion, corral) => {
@@ -61,8 +72,36 @@ function App() {
   if (!usuario) return <Login onLogin={handleLogin} />
 
   if (pagina === 'primer_acceso') {
-    return <PrimerAcceso usuario={usuario} onActivar={(u) => { setUsuario(u); setPagina('mapa') }} />
+    return <PrimerAcceso usuario={usuario} tokenTemporal={tokenTemporal}
+      onActivar={(u) => { setUsuario(u); setPagina('mapa') }} />
   }
+
+  // Trabajadores de zona — si no han checado, primero el checador
+  if (ROLES_CON_CHECADOR.includes(usuario.rol) && yaCheco === false) {
+    return (
+      <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui' }}>
+        <div style={{
+          background: '#2E7D32', color: 'white',
+          padding: '12px 16px', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <span style={{ fontWeight: '700', fontSize: '18px' }}>🐖 Corralia</span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px' }}>{usuario.nombre}</span>
+            <button onClick={handleLogout} style={{
+              background: 'rgba(255,255,255,0.2)', border: 'none',
+              color: 'white', padding: '4px 10px', borderRadius: '6px',
+              cursor: 'pointer', fontSize: '12px'
+            }}>Salir</button>
+          </div>
+        </div>
+        <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />
+      </div>
+    )
+  }
+
+  // Banner para Beyin si no ha checado
+  const mostrarBannerBeyin = usuario.rol === 'encargado_general' && yaCheco === false
 
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta'].includes(pagina)
 
@@ -92,6 +131,24 @@ function App() {
           }}>Salir</button>
         </div>
       </div>
+
+      {/* Banner Beyin sin checar */}
+      {mostrarBannerBeyin && (
+        <div style={{
+          background: '#fff8e1', borderBottom: '2px solid #F57F17',
+          padding: '10px 16px', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <span style={{ color: '#F57F17', fontWeight: '600', fontSize: '14px' }}>
+            ⚠️ No has registrado tu entrada hoy
+          </span>
+          <button onClick={() => irA('checador')} style={{
+            background: '#F57F17', color: 'white', border: 'none',
+            borderRadius: '6px', padding: '6px 12px',
+            fontSize: '13px', cursor: 'pointer', fontWeight: '600'
+          }}>Checar ahora</button>
+        </div>
+      )}
 
       {/* Menu */}
       {menuAbierto && (
@@ -142,7 +199,7 @@ function App() {
         <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
       )}
       {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
-      {pagina === 'checador' && <Checador usuario={usuario} />}
+      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
       {pagina === 'vacunas' && <Vacunas usuario={usuario} />}
       {pagina === 'reportes' && <Reportes />}
       {pagina === 'clientes' && <Clientes usuario={usuario} />}
