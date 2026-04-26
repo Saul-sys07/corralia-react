@@ -36,6 +36,13 @@ function PrimerAcceso({ usuario, tokenTemporal, onActivar }) {
     }
   }
 
+  const inputStyle = {
+    width: '100%', padding: '12px', borderRadius: '8px',
+    border: '1px solid #ddd', fontSize: '16px',
+    marginBottom: '12px', boxSizing: 'border-box',
+    textAlign: 'center', letterSpacing: '4px'
+  }
+
   return (
     <div style={{
       display: 'flex', justifyContent: 'center',
@@ -52,22 +59,14 @@ function PrimerAcceso({ usuario, tokenTemporal, onActivar }) {
         </p>
 
         <input type="password" placeholder="Crea tu PIN (mín. 4 dígitos)"
-          value={pin} onChange={e => setPin(e.target.value)}
-          style={{
-            width: '100%', padding: '12px', borderRadius: '8px',
-            border: '1px solid #ddd', fontSize: '16px',
-            marginBottom: '12px', boxSizing: 'border-box',
-            textAlign: 'center', letterSpacing: '4px'
-          }} />
+          value={pin}
+          onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          style={inputStyle} />
 
         <input type="password" placeholder="Confirma tu PIN"
-          value={confirma} onChange={e => setConfirma(e.target.value)}
-          style={{
-            width: '100%', padding: '12px', borderRadius: '8px',
-            border: '1px solid #ddd', fontSize: '16px',
-            marginBottom: '12px', boxSizing: 'border-box',
-            textAlign: 'center', letterSpacing: '4px'
-          }} />
+          value={confirma}
+          onChange={e => setConfirma(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          style={inputStyle} />
 
         {error && <p style={{ color: '#C62828', fontSize: '14px', margin: '0 0 12px' }}>{error}</p>}
 
