@@ -23,10 +23,10 @@ function App() {
     return u ? JSON.parse(u) : null
   })
   const [pagina, setPagina] = useState(() => {
-  const u = localStorage.getItem('usuario')
-  const rol = u ? JSON.parse(u).rol : null
-  return ['parideras', 'crecimiento', 'gestacion', 'ayudante_general'].includes(rol) ? 'checador' : 'mapa'
-})
+    const u = localStorage.getItem('usuario')
+    const rol = u ? JSON.parse(u).rol : null
+    return ['parideras', 'crecimiento', 'gestacion', 'ayudante_general'].includes(rol) ? 'checador' : 'mapa'
+  })
   const [corralSeleccionado, setCorralSeleccionado] = useState(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [tokenTemporal, setTokenTemporal] = useState(null)
@@ -99,19 +99,16 @@ function App() {
             }}>Salir</button>
           </div>
         </div>
-        <Checador usuario={usuario} onChecado={() => { setYaCheco(true); setPagina('checador') }} />
+        <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />
       </div>
     )
   }
 
-  // Banner para Beyin si no ha checado
   const mostrarBannerBeyin = usuario.rol === 'encargado_general' && yaCheco === false
-
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta'].includes(pagina)
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui' }}>
-      {/* Header */}
       <div style={{
         background: '#2E7D32', color: 'white',
         padding: '12px 16px', display: 'flex',
@@ -136,7 +133,6 @@ function App() {
         </div>
       </div>
 
-      {/* Banner Beyin sin checar */}
       {mostrarBannerBeyin && (
         <div style={{
           background: '#fff8e1', borderBottom: '2px solid #F57F17',
@@ -154,7 +150,6 @@ function App() {
         </div>
       )}
 
-      {/* Menu */}
       {menuAbierto && (
         <div style={{
           background: 'white', border: '1px solid #ddd',
@@ -184,7 +179,6 @@ function App() {
         </div>
       )}
 
-      {/* Contenido */}
       {pagina === 'mapa' && <Mapa usuario={usuario} onAccion={handleAccion} />}
       {pagina === 'almacen' && <Almacen usuario={usuario} />}
       {pagina === 'muerte' && corralSeleccionado && (
@@ -203,7 +197,7 @@ function App() {
         <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
       )}
       {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
-      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => { setYaCheco(true); setPagina('checador') }} />}
+      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
       {pagina === 'vacunas' && <Vacunas usuario={usuario} />}
       {pagina === 'reportes' && <Reportes />}
       {pagina === 'clientes' && <Clientes usuario={usuario} />}
