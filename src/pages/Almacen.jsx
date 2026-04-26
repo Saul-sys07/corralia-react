@@ -5,13 +5,15 @@ const INGREDIENTES = ['Maíz molido', 'Salvado', 'Soya', 'Sal/Omega/Minerales', 
 const PELLETS = ['Pellet Destete/Crecimiento', 'Pellet Finalizador (Engorda)', 'Pellet Otro']
 const OTROS = ['Gasolina camioneta', 'Gasolina bomba', 'Medicamento/Vacuna', 'Material construcción', 'Otro']
 const TODOS_PRODUCTOS = [...INGREDIENTES, ...PELLETS, ...OTROS]
+const PRODUCTOS_ALIMENTO = ['Revoltura lista', 'Pellet Destete/Crecimiento', 'Pellet Finalizador (Engorda)', 'Pellet Otro']
 
 const UNIDADES = {
   'Maíz molido': 'bulto', 'Salvado': 'bulto', 'Soya': 'bulto',
   'Sal/Omega/Minerales': 'kg', 'Melaza': 'litro',
   'Pellet Destete/Crecimiento': 'bulto', 'Pellet Finalizador (Engorda)': 'bulto', 'Pellet Otro': 'bulto',
   'Gasolina camioneta': 'litro', 'Gasolina bomba': 'litro',
-  'Medicamento/Vacuna': 'pieza', 'Material construcción': 'pieza', 'Otro': 'pieza'
+  'Medicamento/Vacuna': 'pieza', 'Material construcción': 'pieza', 'Otro': 'pieza',
+  'Revoltura lista': 'kg'
 }
 
 const KG_BULTO = { 'Maíz molido': 40, 'Salvado': 25, 'Soya': 40, 'Pellet Destete/Crecimiento': 40, 'Pellet Finalizador (Engorda)': 40, 'Pellet Otro': 40 }
@@ -55,7 +57,7 @@ function Almacen({ usuario }) {
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets']].map(([key, label]) => (
+        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '8px', border: 'none', borderRadius: '8px',
             background: tab === key ? '#2E7D32' : '#f0f0f0',
@@ -70,6 +72,7 @@ function Almacen({ usuario }) {
       {tab === 'compra' && <Compra onExito={cargarDatos} />}
       {tab === 'revoltura' && <Revoltura inventario={inventario} onExito={cargarDatos} />}
       {tab === 'tickets' && <Tickets />}
+      {tab === 'alimento' && <Alimento onExito={cargarDatos} />}
     </div>
   )
 }
@@ -364,6 +367,190 @@ function Tickets() {
             style={{ width: '100%', borderRadius: '8px', objectFit: 'cover' }} />
         </div>
       ))}
+    </div>
+  )
+}
+
+function Alimento({ onExito }) {
+  const [corrales, setCorrales] = useState([])
+  const [raciones, setRaciones] = useState([])
+  const [corralId, setCorralId] = useState(null)
+  const [producto, setProducto] = useState('Revoltura lista')
+  const [cantidad, setCantidad] = useState('')
+  const [turno, setTurno] = useState('mañana')
+  const [loading, setLoading] = useState(false)
+  const [mensaje, setMensaje] = useState('')
+
+  const cargar = async () => {
+    const [map, rac] = await Promise.all([
+      api.get('/mapa'),
+      api.get('/almacen/raciones')
+    ])
+    setCorrales(map.data.filter(c => c.poblacion_actual > 0))
+    setRaciones(rac.data)
+  }
+
+  useEffect(() => { cargar() }, [])
+
+  // Obtener ración guardada para el corral seleccionado
+  const racionGuardada = raciones.find(r => r.id_chiquero === corralId && r.producto === producto)
+
+  const registrar = async (cantidadFinal) => {
+    if (!corralId || !cantidadFinal) return
+    setLoading(true)
+    try {
+      // Guardar como ración del corral
+      await api.post('/almacen/raciones', {
+        id_chiquero: corralId,
+        producto,
+        cantidad: Number(cantidadFinal),
+        unidad: UNIDADES[producto] || 'kg'
+      })
+      // Registrar salida del almacén
+      await api.post('/almacen/salida-alimento', {
+        id_chiquero: corralId,
+        producto,
+        cantidad: Number(cantidadFinal),
+        unidad: UNIDADES[producto] || 'kg',
+        turno
+      })
+      setMensaje(`✅ ${turno === 'mañana' ? 'Mañana' : 'Tarde'} registrada`)
+      setTimeout(() => setMensaje(''), 3000)
+      setCantidad('')
+      onExito()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const repetirRacion = async () => {
+    if (!racionGuardada) return
+    setLoading(true)
+    try {
+      await api.post('/almacen/salida-alimento', {
+        id_chiquero: corralId,
+        producto: racionGuardada.producto,
+        cantidad: racionGuardada.cantidad,
+        unidad: racionGuardada.unidad,
+        turno
+      })
+      setMensaje(`✅ Ración de la ${turno} registrada`)
+      setTimeout(() => setMensaje(''), 3000)
+      onExito()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <p style={{ color: '#666', fontSize: '13px', margin: '0 0 16px' }}>
+        Registra el alimento dado por corral — guarda la ración para repetirla en el siguiente turno
+      </p>
+
+      {mensaje && (
+        <div style={{
+          background: '#f1f8e9', border: '1px solid #c5e1a5',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#2E7D32', fontWeight: '600'
+        }}>{mensaje}</div>
+      )}
+
+      {/* Turno */}
+      <div style={{ marginBottom: '14px' }}>
+        <label style={labelStyle}>Turno:</label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {['mañana', 'tarde'].map(t => (
+            <button key={t} onClick={() => setTurno(t)}
+              style={chipStyle(turno === t, '#2E7D32')}>
+              {t === 'mañana' ? '🌅 Mañana' : '🌇 Tarde'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Corral */}
+      <div style={{ marginBottom: '14px' }}>
+        <label style={labelStyle}>Corral:</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
+            <div key={zona}>
+              <div style={{ fontSize: '12px', color: '#888', fontWeight: '600', margin: '4px 0' }}>{zona}</div>
+              {corrales.filter(c => c.zona === zona).map(c => (
+                <button key={c.id} onClick={() => setCorralId(c.id)}
+                  style={{
+                    display: 'block', width: '100%', padding: '10px 14px',
+                    borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                    border: corralId === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
+                    background: corralId === c.id ? '#f1f8e9' : 'white',
+                    fontSize: '14px', marginBottom: '4px'
+                  }}>
+                  <strong>{c.nombre}</strong> — {c.tipo_animal} ({c.poblacion_actual} animales)
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Producto */}
+      <div style={{ marginBottom: '14px' }}>
+        <label style={labelStyle}>Alimento:</label>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {PRODUCTOS_ALIMENTO.map(p => (
+            <button key={p} onClick={() => setProducto(p)}
+              style={chipStyle(producto === p, '#2E7D32')}>{p}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Si hay ración guardada — mostrar botón de repetir */}
+      {corralId && racionGuardada && (
+        <div style={{
+          background: '#e3f2fd', border: '1px solid #90caf9',
+          borderRadius: '10px', padding: '12px', marginBottom: '14px'
+        }}>
+          <div style={{ fontSize: '13px', color: '#1976D2', fontWeight: '600', marginBottom: '8px' }}>
+            Ración guardada: {racionGuardada.cantidad} {racionGuardada.unidad}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={repetirRacion} disabled={loading} style={{
+              flex: 1, padding: '12px', background: '#1976D2', color: 'white',
+              border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer'
+            }}>
+              🔄 Repetir ración
+            </button>
+            <button onClick={() => setCantidad(String(racionGuardada.cantidad))} style={{
+              flex: 1, padding: '12px', background: '#f0f0f0', color: '#555',
+              border: 'none', borderRadius: '8px', cursor: 'pointer'
+            }}>
+              ✏️ Modificar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cantidad manual */}
+      {(!racionGuardada || cantidad) && corralId && (
+        <div style={{ marginBottom: '14px' }}>
+          <label style={labelStyle}>Cantidad ({UNIDADES[producto] || 'kg'}):</label>
+          <input type="number" min={0} step={0.5} value={cantidad}
+            onChange={e => setCantidad(e.target.value)}
+            placeholder="Ej: 2.5"
+            style={inputStyle} />
+        </div>
+      )}
+
+      <button onClick={() => registrar(cantidad)} 
+        disabled={loading || !corralId || !cantidad}
+        style={{
+          width: '100%', padding: '14px',
+          background: loading || !corralId || !cantidad ? '#ccc' : '#2E7D32',
+          color: 'white', border: 'none', borderRadius: '10px',
+          fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+        }}>
+        {loading ? 'Registrando...' : `Registrar ${turno}`}
+      </button>
     </div>
   )
 }
