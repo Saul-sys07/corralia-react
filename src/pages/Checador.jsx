@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
-function Checador({ usuario }) {
+function Checador({ usuario, onChecado }) {
   const esAdmin = usuario.rol === 'admin'
   if (esAdmin) return <HistorialAdmin />
-  return <CheckerTrabajador usuario={usuario} />
+  return <CheckerTrabajador usuario={usuario} onChecado={onChecado} />
 }
 
-function CheckerTrabajador({ usuario }) {
+function CheckerTrabajador({ usuario, onChecado }) {
   const [estado, setEstado] = useState(null)
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState('')
@@ -15,43 +15,43 @@ function CheckerTrabajador({ usuario }) {
   const [accionPendiente, setAccionPendiente] = useState(null)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
+  const procesando = useRef(false)
 
   const cargarEstado = async () => {
     const r = await api.get('/checador/estado')
     setEstado(r.data)
+    return r.data
   }
 
   useEffect(() => { cargarEstado() }, [])
 
   const abrirCamara = async (accion) => {
+    if (procesando.current || loading) return
     setAccionPendiente(accion)
     setMostrarCamara(true)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' } // camara frontal
+        video: { facingMode: 'user' }
       })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
     } catch (e) {
-      // Si no hay camara, registrar sin foto
       setMostrarCamara(false)
       registrar(accion, null)
     }
   }
 
   const tomarFoto = async () => {
+    if (procesando.current) return
     const canvas = document.createElement('canvas')
     canvas.width = videoRef.current.videoWidth
     canvas.height = videoRef.current.videoHeight
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
     const base64 = canvas.toDataURL('image/jpeg').split(',')[1]
-
-    // Cerrar camara
     streamRef.current?.getTracks().forEach(t => t.stop())
     setMostrarCamara(false)
-
     await registrar(accionPendiente, base64)
   }
 
@@ -62,6 +62,8 @@ function CheckerTrabajador({ usuario }) {
   }
 
   const registrar = async (accion, fotoBase64) => {
+    if (procesando.current) return
+    procesando.current = true
     setLoading(true)
     try {
       if (accion === 'entrada') {
@@ -78,9 +80,11 @@ function CheckerTrabajador({ usuario }) {
       }
 
       setMensaje(`✅ ${accion === 'entrada' ? 'Entrada' : 'Salida'} registrada`)
-      cargarEstado()
+      const nuevoEstado = await cargarEstado()
+      if (accion === 'entrada' && onChecado) onChecado()
     } finally {
       setLoading(false)
+      procesando.current = false
     }
   }
 
@@ -88,7 +92,6 @@ function CheckerTrabajador({ usuario }) {
 
   const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 
-  // Pantalla de cámara
   if (mostrarCamara) {
     return (
       <div style={{ padding: '16px', textAlign: 'center' }}>
@@ -96,12 +99,12 @@ function CheckerTrabajador({ usuario }) {
         <video ref={videoRef} autoPlay playsInline
           style={{ width: '100%', borderRadius: '12px', marginBottom: '12px', maxHeight: '400px', objectFit: 'cover' }} />
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={tomarFoto} style={{
-            flex: 1, padding: '14px', background: '#2E7D32',
+          <button onClick={tomarFoto} disabled={loading} style={{
+            flex: 1, padding: '14px', background: loading ? '#ccc' : '#2E7D32',
             color: 'white', border: 'none', borderRadius: '10px',
             fontSize: '16px', fontWeight: '700', cursor: 'pointer'
           }}>📸 Tomar foto</button>
-          <button onClick={cancelarFoto} style={{
+          <button onClick={cancelarFoto} disabled={loading} style={{
             flex: 1, padding: '14px', background: '#f0f0f0',
             color: '#555', border: 'none', borderRadius: '10px',
             fontSize: '16px', cursor: 'pointer'
@@ -183,12 +186,14 @@ function HistorialAdmin() {
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('')
 
-  useEffect(() => {
+  const cargar = () => {
     api.get('/checador/historial').then(r => {
       setAsistencias(r.data)
       setLoading(false)
     })
-  }, [])
+  }
+
+  useEffect(() => { cargar() }, [])
 
   const filtradas = filtro
     ? asistencias.filter(a => a.nombre?.toLowerCase().includes(filtro.toLowerCase()))
@@ -206,6 +211,11 @@ function HistorialAdmin() {
   return (
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px' }}>⏰ Asistencias</h2>
+
+      <button onClick={cargar} style={{
+        marginBottom: '12px', padding: '8px 16px', background: '#555',
+        color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer'
+      }}>🔄 Actualizar</button>
 
       <div style={{ marginBottom: '16px' }}>
         <h4 style={{ margin: '0 0 8px', color: '#444' }}>Días trabajados:</h4>
