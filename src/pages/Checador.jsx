@@ -19,6 +19,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
 
   const cargarEstado = async () => {
     const r = await api.get('/checador/estado')
+    console.log('Estado checador:', r.data)
     setEstado(r.data)
     return r.data
   }
