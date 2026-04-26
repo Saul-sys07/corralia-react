@@ -22,7 +22,11 @@ function App() {
     const u = localStorage.getItem('usuario')
     return u ? JSON.parse(u) : null
   })
-  const [pagina, setPagina] = useState('mapa')
+  const [pagina, setPagina] = useState(() => {
+  const u = localStorage.getItem('usuario')
+  const rol = u ? JSON.parse(u).rol : null
+  return ['parideras', 'crecimiento', 'gestacion', 'ayudante_general'].includes(rol) ? 'checador' : 'mapa'
+})
   const [corralSeleccionado, setCorralSeleccionado] = useState(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [tokenTemporal, setTokenTemporal] = useState(null)
@@ -95,7 +99,7 @@ function App() {
             }}>Salir</button>
           </div>
         </div>
-        <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />
+        <Checador usuario={usuario} onChecado={() => { setYaCheco(true); setPagina('checador') }} />
       </div>
     )
   }
@@ -159,11 +163,11 @@ function App() {
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}>
           {[
-            ['mapa', '🗺️ Mapa de Corrales'],
+            ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa de Corrales']] : []),
             ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
             ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
             ['checador', '⏰ Checador'],
-            ['vacunas', '💉 Vacunas'],
+            ...((['admin', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
             ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
             ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
             ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
@@ -199,7 +203,7 @@ function App() {
         <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
       )}
       {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
-      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
+      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => { setYaCheco(true); setPagina('checador') }} />}
       {pagina === 'vacunas' && <Vacunas usuario={usuario} />}
       {pagina === 'reportes' && <Reportes />}
       {pagina === 'clientes' && <Clientes usuario={usuario} />}
