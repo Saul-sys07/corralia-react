@@ -49,7 +49,10 @@ function Login({ onLogin }) {
           type="password"
           placeholder="PIN de acceso"
           value={pin}
-          onChange={(e) => setPin(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+            setPin(val)
+          }}
           onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
           style={{
             width: '100%', padding: '12px',
