@@ -15,7 +15,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
   const [accionPendiente, setAccionPendiente] = useState(null)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
-  const procesando = useRef(false)
+  const [procesando, setProcesando] = useState(false)
 
   const cargarEstado = async () => {
     const r = await api.get('/checador/estado')
@@ -26,7 +26,8 @@ function CheckerTrabajador({ usuario, onChecado }) {
   useEffect(() => { cargarEstado() }, [])
 
   const abrirCamara = async (accion) => {
-    if (procesando.current || loading) return
+    if (procesando || loading) return
+    setProcesando(true)
     setAccionPendiente(accion)
     setMostrarCamara(true)
     try {
@@ -39,6 +40,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
       }
     } catch (e) {
       setMostrarCamara(false)
+      setProcesando(false)
       registrar(accion, null)
     }
   }
@@ -84,7 +86,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
       if (accion === 'entrada' && onChecado) onChecado()
     } finally {
       setLoading(false)
-      procesando.current = false
+      setProcesando(false)
     }
   }
 
@@ -132,7 +134,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
       )}
 
       {!estado.checo_entrada && (
-        <button onClick={() => abrirCamara('entrada')} disabled={loading}
+        <button onClick={() => abrirCamara('entrada')} disabled={loading || procesando}
           style={{
             width: '100%', padding: '20px',
             background: loading ? '#ccc' : '#2E7D32',
@@ -151,7 +153,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
           }}>
             <p style={{ margin: 0, color: '#2E7D32', fontWeight: '600' }}>✅ Entrada registrada hoy</p>
           </div>
-          <button onClick={() => abrirCamara('salida')} disabled={loading}
+          <button onClick={() => abrirCamara('salida')} disabled={loading || procesando}
             style={{
               width: '100%', padding: '20px',
               background: loading ? '#ccc' : '#C62828',
