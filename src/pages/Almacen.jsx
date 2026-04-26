@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
 const INGREDIENTES = ['Maíz molido', 'Salvado', 'Soya', 'Sal/Omega/Minerales', 'Melaza']
@@ -110,6 +110,7 @@ function Compra({ onExito }) {
   const [nota, setNota] = useState('')
   const [carrito, setCarrito] = useState([])
   const [descuento, setDescuento] = useState(0)
+  const [ticketUrl, setTicketUrl] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const unidad = UNIDADES[producto] || 'pieza'
@@ -123,7 +124,7 @@ function Compra({ onExito }) {
     const categoria = INGREDIENTES.includes(producto) ? 'Ingredientes revoltura'
       : PELLETS.includes(producto) ? 'Pellet' : 'Otro'
     const nombreFinal = producto === 'Otro' ? `Otro: ${nota}` : producto
-    setCarrito([...carrito, { producto: nombreFinal, cantidad: Number(cantidad), unidad, costo: Number(costo), categoria, nota }])
+    setCarrito([...carrito, { producto: nombreFinal, cantidad: Number(cantidad), unidad, costo: Number(costo), categoria }])
     setCantidad('')
     setCosto('')
     setNota('')
@@ -136,6 +137,7 @@ function Compra({ onExito }) {
       await api.post('/almacen/compra', { items: carrito, descuento })
       setCarrito([])
       setDescuento(0)
+      setTicketUrl(null)
       onExito()
     } finally {
       setLoading(false)
@@ -224,6 +226,9 @@ function Compra({ onExito }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '18px', marginBottom: '12px' }}>
               <span>Total:</span><span style={{ color: '#2E7D32' }}>${total.toFixed(2)}</span>
             </div>
+
+            <FotoTicket onFotoSubida={(url) => setTicketUrl(url)} />
+
             <button onClick={confirmar} disabled={loading}
               style={{
                 width: '100%', padding: '14px',
@@ -235,6 +240,93 @@ function Compra({ onExito }) {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function FotoTicket({ onFotoSubida }) {
+  const [mostrarCamara, setMostrarCamara] = useState(false)
+  const [fotoUrl, setFotoUrl] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+
+  const abrirCamara = async () => {
+    setMostrarCamara(true)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream
+      if (videoRef.current) videoRef.current.srcObject = stream
+    } catch (e) {
+      setMostrarCamara(false)
+    }
+  }
+
+  const tomarFoto = async () => {
+    setLoading(true)
+    const canvas = document.createElement('canvas')
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+    const base64 = canvas.toDataURL('image/jpeg').split(',')[1]
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    setMostrarCamara(false)
+    try {
+      const r = await api.post('/almacen/foto-ticket', { foto_base64: base64 })
+      setFotoUrl(r.data.url)
+      onFotoSubida(r.data.url)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cancelar = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    setMostrarCamara(false)
+  }
+
+  if (mostrarCamara) {
+    return (
+      <div style={{ marginBottom: '12px' }}>
+        <video ref={videoRef} autoPlay playsInline
+          style={{ width: '100%', borderRadius: '8px', marginBottom: '8px' }} />
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={tomarFoto} disabled={loading} style={{
+            flex: 1, padding: '10px', background: '#1976D2', color: 'white',
+            border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700'
+          }}>📸 Tomar foto</button>
+          <button onClick={cancelar} style={{
+            flex: 1, padding: '10px', background: '#f0f0f0', color: '#555',
+            border: 'none', borderRadius: '8px', cursor: 'pointer'
+          }}>Cancelar</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      {fotoUrl ? (
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '13px', color: '#2E7D32', fontWeight: '600', marginBottom: '4px' }}>
+            ✅ Ticket adjunto
+          </div>
+          <img src={fotoUrl} alt="ticket"
+            style={{ width: '100%', borderRadius: '8px', maxHeight: '150px', objectFit: 'cover' }} />
+          <button onClick={() => { setFotoUrl(null); onFotoSubida(null) }}
+            style={{ marginTop: '4px', background: 'none', border: 'none', color: '#C62828', cursor: 'pointer', fontSize: '13px' }}>
+            🗑️ Quitar foto
+          </button>
+        </div>
+      ) : (
+        <button onClick={abrirCamara} style={{
+          width: '100%', padding: '10px', background: '#f5f5f5',
+          border: '2px dashed #ddd', borderRadius: '8px',
+          cursor: 'pointer', color: '#666', fontSize: '14px', marginBottom: '12px'
+        }}>
+          📷 Adjuntar foto del ticket (opcional)
+        </button>
       )}
     </div>
   )
