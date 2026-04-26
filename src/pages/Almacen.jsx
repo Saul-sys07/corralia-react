@@ -42,7 +42,6 @@ function Almacen({ usuario }) {
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 8px' }}>🏚️ Almacén</h2>
 
-      {/* Saldo disponible */}
       <div style={{
         background: saldo >= 0 ? '#f1f8e9' : '#ffebee',
         border: `2px solid ${saldo >= 0 ? '#2E7D32' : '#C62828'}`,
@@ -55,7 +54,6 @@ function Almacen({ usuario }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
         {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
@@ -109,6 +107,7 @@ function Compra({ onExito }) {
   const [producto, setProducto] = useState(TODOS_PRODUCTOS[0])
   const [cantidad, setCantidad] = useState('')
   const [costo, setCosto] = useState('')
+  const [nota, setNota] = useState('')
   const [carrito, setCarrito] = useState([])
   const [descuento, setDescuento] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -120,11 +119,14 @@ function Compra({ onExito }) {
 
   const agregar = () => {
     if (!cantidad || !costo) return
+    if (producto === 'Otro' && !nota) return
     const categoria = INGREDIENTES.includes(producto) ? 'Ingredientes revoltura'
       : PELLETS.includes(producto) ? 'Pellet' : 'Otro'
-    setCarrito([...carrito, { producto, cantidad: Number(cantidad), unidad, costo: Number(costo), categoria }])
+    const nombreFinal = producto === 'Otro' ? `Otro: ${nota}` : producto
+    setCarrito([...carrito, { producto: nombreFinal, cantidad: Number(cantidad), unidad, costo: Number(costo), categoria, nota }])
     setCantidad('')
     setCosto('')
+    setNota('')
   }
 
   const confirmar = async () => {
@@ -142,12 +144,11 @@ function Compra({ onExito }) {
 
   return (
     <div>
-      {/* Selector producto */}
       <div style={{ marginBottom: '12px' }}>
         <label style={labelStyle}>Producto:</label>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {TODOS_PRODUCTOS.map(p => (
-            <button key={p} onClick={() => setProducto(p)}
+            <button key={p} onClick={() => { setProducto(p); setNota('') }}
               style={chipStyle(producto === p, '#1976D2')}>
               {p}
             </button>
@@ -173,11 +174,24 @@ function Compra({ onExito }) {
         </div>
       </div>
 
-      <button onClick={agregar} style={{
-        width: '100%', padding: '10px', background: '#1976D2',
-        color: 'white', border: 'none', borderRadius: '8px',
-        cursor: 'pointer', fontWeight: '700', marginBottom: '16px'
-      }}>➕ Agregar al carrito</button>
+      {producto === 'Otro' && (
+        <div style={{ marginBottom: '12px' }}>
+          <label style={labelStyle}>¿Qué es? (obligatorio):</label>
+          <input type="text" value={nota}
+            onChange={e => setNota(e.target.value)}
+            placeholder="Ej: medicina para la tos, herramienta..."
+            style={inputStyle} />
+        </div>
+      )}
+
+      <button onClick={agregar}
+        disabled={!cantidad || !costo || (producto === 'Otro' && !nota)}
+        style={{
+          width: '100%', padding: '10px',
+          background: !cantidad || !costo || (producto === 'Otro' && !nota) ? '#ccc' : '#1976D2',
+          color: 'white', border: 'none', borderRadius: '8px',
+          cursor: 'pointer', fontWeight: '700', marginBottom: '16px'
+        }}>➕ Agregar al carrito</button>
 
       {carrito.length > 0 && (
         <div>
@@ -188,7 +202,7 @@ function Compra({ onExito }) {
               padding: '8px 12px', background: '#f5f5f5',
               borderRadius: '8px', marginBottom: '4px'
             }}>
-              <span>{item.producto} — {item.cantidad} {item.unidad}</span>
+              <span style={{ fontSize: '13px' }}>{item.producto} — {item.cantidad} {item.unidad}</span>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <strong>${item.costo.toFixed(2)}</strong>
                 <button onClick={() => setCarrito(carrito.filter((_, i) => i !== idx))}
@@ -257,7 +271,6 @@ function Revoltura({ inventario, onExito }) {
         Los bultos se transforman en revoltura lista 🐷
       </p>
 
-      {/* Stock disponible */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {[
           ['Maíz', getStock('Maíz molido'), 'bts'],
