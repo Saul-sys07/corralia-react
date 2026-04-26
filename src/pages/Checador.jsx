@@ -13,9 +13,9 @@ function CheckerTrabajador({ usuario, onChecado }) {
   const [mensaje, setMensaje] = useState('')
   const [mostrarCamara, setMostrarCamara] = useState(false)
   const [accionPendiente, setAccionPendiente] = useState(null)
+  const [procesando, setProcesando] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
-  const [procesando, setProcesando] = useState(false)
 
   const cargarEstado = async () => {
     const r = await api.get('/checador/estado')
@@ -41,12 +41,11 @@ function CheckerTrabajador({ usuario, onChecado }) {
     } catch (e) {
       setMostrarCamara(false)
       setProcesando(false)
-      registrar(accion, null)
+      await registrar(accion, null)
     }
   }
 
   const tomarFoto = async () => {
-    if (procesando.current) return
     const canvas = document.createElement('canvas')
     canvas.width = videoRef.current.videoWidth
     canvas.height = videoRef.current.videoHeight
@@ -61,11 +60,10 @@ function CheckerTrabajador({ usuario, onChecado }) {
     streamRef.current?.getTracks().forEach(t => t.stop())
     setMostrarCamara(false)
     setAccionPendiente(null)
+    setProcesando(false)
   }
 
   const registrar = async (accion, fotoBase64) => {
-    if (procesando.current) return
-    procesando.current = true
     setLoading(true)
     try {
       if (accion === 'entrada') {
@@ -82,7 +80,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
       }
 
       setMensaje(`✅ ${accion === 'entrada' ? 'Entrada' : 'Salida'} registrada`)
-      const nuevoEstado = await cargarEstado()
+      await cargarEstado()
       if (accion === 'entrada' && onChecado) onChecado()
     } finally {
       setLoading(false)
@@ -137,7 +135,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
         <button onClick={() => abrirCamara('entrada')} disabled={loading || procesando}
           style={{
             width: '100%', padding: '20px',
-            background: loading ? '#ccc' : '#2E7D32',
+            background: loading || procesando ? '#ccc' : '#2E7D32',
             color: 'white', border: 'none', borderRadius: '12px',
             fontSize: '18px', fontWeight: '700', cursor: 'pointer'
           }}>
@@ -156,7 +154,7 @@ function CheckerTrabajador({ usuario, onChecado }) {
           <button onClick={() => abrirCamara('salida')} disabled={loading || procesando}
             style={{
               width: '100%', padding: '20px',
-              background: loading ? '#ccc' : '#C62828',
+              background: loading || procesando ? '#ccc' : '#C62828',
               color: 'white', border: 'none', borderRadius: '12px',
               fontSize: '18px', fontWeight: '700', cursor: 'pointer'
             }}>
