@@ -55,7 +55,7 @@ function Almacen({ usuario }) {
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura']].map(([key, label]) => (
+        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '10px', border: 'none', borderRadius: '8px',
             background: tab === key ? '#2E7D32' : '#f0f0f0',
@@ -429,5 +429,42 @@ const chipStyle = (activo, color) => ({
   color: activo ? color : '#666',
   fontWeight: activo ? '700' : '400', fontSize: '12px'
 })
+
+{tab === 'tickets' && <Tickets />}
+
+function Tickets() {
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/almacen/tickets').then(r => {
+      setTickets(r.data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <p style={{ color: '#888' }}>Cargando...</p>
+  if (tickets.length === 0) return <p style={{ color: '#888' }}>Sin tickets registrados.</p>
+
+  return (
+    <div>
+      <p style={{ color: '#666', fontSize: '13px', margin: '0 0 16px' }}>
+        Fotos de tickets de compra para cotejo
+      </p>
+      {tickets.map((t, i) => (
+        <div key={i} style={{
+          border: '1px solid #ddd', borderRadius: '10px',
+          padding: '12px', marginBottom: '8px', background: 'white'
+        }}>
+          <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>
+            {t.usuario_id} — {t.fecha ? new Date(t.fecha).toLocaleString('es-MX') : '?'}
+          </div>
+          <img src={t.url} alt="ticket"
+            style={{ width: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default Almacen
