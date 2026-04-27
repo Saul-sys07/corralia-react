@@ -9,13 +9,18 @@ function Reportes() {
   const [mes, setMes] = useState(hoy.getMonth() + 1)
   const [anio, setAnio] = useState(hoy.getFullYear())
   const [reporte, setReporte] = useState(null)
+  const [ica, setIca] = useState([])
   const [loading, setLoading] = useState(false)
 
   const cargar = async () => {
     setLoading(true)
     try {
-      const r = await api.get(`/reportes/mensual?mes=${mes}&anio=${anio}`)
+      const [r, icaData] = await Promise.all([
+        api.get(`/reportes/mensual?mes=${mes}&anio=${anio}`),
+        api.get('/reportes/ica')
+      ])
       setReporte(r.data)
+      setIca(icaData.data)
     } finally {
       setLoading(false)
     }
@@ -27,7 +32,6 @@ function Reportes() {
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px' }}>📊 Reporte Mensual</h2>
 
-      {/* Selector mes/año */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
         <select value={mes} onChange={e => setMes(Number(e.target.value))}
           style={{ flex: 2, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}>
@@ -43,7 +47,7 @@ function Reportes() {
 
       {reporte && !loading && (
         <div>
-          <h3 style={{ color: '#2E7D32', margin: '0 0 12px' }}>
+          <h3 style={{ color: '#2E7D32', margin: '0 0 4px' }}>
             🐖 Rancho Yáñez — {MESES[mes-1]} {anio}
           </h3>
           <p style={{ color: '#888', margin: '0 0 16px', fontSize: '13px' }}>Atlacomulco, Estado de México</p>
@@ -113,7 +117,6 @@ function Reportes() {
                 </strong>
               </div>
             ))}
-
             <div style={{
               background: reporte.finanzas.utilidad >= 0 ? '#f1f8e9' : '#ffebee',
               border: `2px solid ${reporte.finanzas.utilidad >= 0 ? '#2E7D32' : '#C62828'}`,
@@ -125,6 +128,50 @@ function Reportes() {
               </div>
             </div>
           </div>
+
+          {/* ICA por corral */}
+          {ica.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ margin: '0 0 4px', color: '#444' }}>🌽 ICA por corral — últimos 30 días</h4>
+              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 8px' }}>
+                Índice de Conversión Alimenticia: kg alimento ÷ kg vendidos. Estándar: 2.5 o menos.
+              </p>
+              {ica.map((r, i) => {
+                const bueno = r.ica !== null && r.ica <= 2.5
+                const sinVentas = r.ica === null
+                return (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 14px', background: '#f9f9f9',
+                    borderRadius: '8px', marginBottom: '4px',
+                    borderLeft: `4px solid ${sinVentas ? '#9E9E9E' : bueno ? '#2E7D32' : '#C62828'}`
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '14px' }}>{r.corral}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>
+                        {r.kg_alimento.toFixed(1)} kg alimento · {r.kg_vendidos.toFixed(1)} kg vendidos
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      {sinVentas ? (
+                        <span style={{ fontSize: '13px', color: '#9E9E9E' }}>Sin ventas</span>
+                      ) : (
+                        <>
+                          <div style={{
+                            fontSize: '20px', fontWeight: '800',
+                            color: bueno ? '#2E7D32' : '#C62828'
+                          }}>{r.ica}</div>
+                          <div style={{ fontSize: '11px', color: bueno ? '#2E7D32' : '#C62828' }}>
+                            {bueno ? '✅ Bien' : '⚠️ Alto'}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* Comparativa */}
           {(reporte.anterior.ventas > 0 || reporte.anterior.almacen > 0) && (
