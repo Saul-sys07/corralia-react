@@ -130,6 +130,7 @@ function App() {
     ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
     ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
     ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
+    ...(usuario.rol === 'encargado_general' ? [['mi-reporte', '📊 Mi Reporte']] : []),
   ]
 
   const Contenido = () => (
@@ -149,6 +150,7 @@ function App() {
       {pagina === 'ventas' && <Ventas />}
       {pagina === 'configuracion' && <Configuracion />}
       {pagina === 'movimientos' && <Movimientos />}
+      {pagina === 'mi-reporte' && <MiReporte />}
     </>
   )
 
