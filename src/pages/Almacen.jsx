@@ -819,7 +819,7 @@ function HistorialAlimento() {
                 padding: '6px 10px', background: i % 2 === 0 ? '#f9f9f9' : 'white',
                 borderRadius: '6px', marginBottom: '2px', fontSize: '13px'
               }}>
-                <span>{r.notas?.replace('Alimentación ', '').split(' — ')[0]} · {r.producto}</span>
+                <span>{r.corral_nombre || r.notas?.split(' — ')[0]} · {r.producto}</span>
                 <strong>{parseFloat(r.total_cantidad).toFixed(1)} {r.unidad}</strong>
               </div>
             ))}
