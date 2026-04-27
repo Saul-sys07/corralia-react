@@ -479,31 +479,20 @@ function Alimento({ onExito }) {
         </div>
       </div>
 
+      {/* Corral */}
       <div style={{ marginBottom: '14px' }}>
         <label style={labelStyle}>Corral:</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
-            <div key={zona}>
-              <div style={{ fontSize: '12px', color: '#888', fontWeight: '600', margin: '4px 0' }}>{zona}</div>
-              {corrales.filter(c => c.zona === zona).map(c => {
-                const yaComio = yaAlimento(c.id, turno)
-                return (
-                  <button key={c.id} onClick={() => setCorralId(c.id)}
-                    style={{
-                      display: 'block', width: '100%', padding: '10px 14px',
-                      borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                      border: corralId === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
-                      background: yaComio ? '#f1f8e9' : corralId === c.id ? '#e8f5e9' : 'white',
-                      fontSize: '14px', marginBottom: '4px'
-                    }}>
-                    <strong>{c.nombre}</strong> — {c.tipo_animal} ({c.poblacion_actual} animales)
-                    {yaComio && <span style={{ color: '#2E7D32', fontSize: '12px', marginLeft: '8px' }}>✅ Ya comió</span>}
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
+        {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
+          <ZonaAlimento
+            key={zona}
+            zona={zona}
+            corrales={corrales.filter(c => c.zona === zona)}
+            corralId={corralId}
+            turno={turno}
+            yaAlimento={yaAlimento}
+            onSelect={setCorralId}
+          />
+        ))}
       </div>
 
       <div style={{ marginBottom: '14px' }}>
@@ -674,5 +663,57 @@ const chipStyle = (activo, color) => ({
   color: activo ? color : '#666',
   fontWeight: activo ? '700' : '400', fontSize: '12px'
 })
+
+function ZonaAlimento({ zona, corrales, corralId, turno, yaAlimento, onSelect }) {
+  const [colapsada, setColapsada] = useState(false)
+  const comedosTurno = corrales.filter(c => yaAlimento(c.id, turno)).length
+
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      <div
+        onClick={() => setColapsada(!colapsada)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '8px 12px', background: '#2E7D32', color: 'white',
+          borderRadius: colapsada ? '8px' : '8px 8px 0 0',
+          cursor: 'pointer', userSelect: 'none'
+        }}
+      >
+        <span style={{ fontWeight: '700' }}>{zona}</span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {comedosTurno > 0 && (
+            <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.3)', padding: '2px 8px', borderRadius: '10px' }}>
+              ✅ {comedosTurno}/{corrales.length} listos
+            </span>
+          )}
+          <span>{colapsada ? '▶' : '▼'}</span>
+        </div>
+      </div>
+      {!colapsada && (
+        <div style={{
+          border: '2px solid #2E7D32', borderTop: 'none',
+          borderRadius: '0 0 8px 8px', padding: '8px', background: '#fafafa'
+        }}>
+          {corrales.map(c => {
+            const yaComio = yaAlimento(c.id, turno)
+            return (
+              <button key={c.id} onClick={() => onSelect(c.id)}
+                style={{
+                  display: 'block', width: '100%', padding: '10px 14px',
+                  borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                  border: corralId === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
+                  background: yaComio ? '#f1f8e9' : corralId === c.id ? '#e8f5e9' : 'white',
+                  fontSize: '14px', marginBottom: '4px'
+                }}>
+                <strong>{c.nombre}</strong> — {c.tipo_animal} ({c.poblacion_actual} animales)
+                {yaComio && <span style={{ color: '#2E7D32', fontSize: '12px', marginLeft: '8px' }}>✅ Ya comió</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default Almacen
