@@ -374,6 +374,7 @@ function Tickets() {
 function Alimento({ onExito }) {
   const [corrales, setCorrales] = useState([])
   const [raciones, setRaciones] = useState([])
+  const [alimentoHoy, setAlimentoHoy] = useState([])
   const [corralId, setCorralId] = useState(null)
   const [producto, setProducto] = useState('Revoltura lista')
   const [cantidad, setCantidad] = useState('')
@@ -382,31 +383,39 @@ function Alimento({ onExito }) {
   const [mensaje, setMensaje] = useState('')
 
   const cargar = async () => {
-    const [map, rac] = await Promise.all([
+    const [map, rac, hoy] = await Promise.all([
       api.get('/mapa'),
-      api.get('/almacen/raciones')
+      api.get('/almacen/raciones'),
+      api.get('/almacen/alimento-hoy')
     ])
     setCorrales(map.data.filter(c => c.poblacion_actual > 0))
     setRaciones(rac.data)
+    setAlimentoHoy(hoy.data)
   }
 
   useEffect(() => { cargar() }, [])
 
-  // Obtener ración guardada para el corral seleccionado
   const racionGuardada = raciones.find(r => r.id_chiquero === corralId && r.producto === producto)
+
+  const yaAlimento = (idChiquero, t) => {
+    return alimentoHoy.some(a =>
+      a.notas?.includes(`corral ${idChiquero}`) &&
+      a.notas?.includes(`Alimentación ${t}`)
+    )
+  }
+
+  const yaRegistrado = corralId && yaAlimento(corralId, turno)
 
   const registrar = async (cantidadFinal) => {
     if (!corralId || !cantidadFinal) return
     setLoading(true)
     try {
-      // Guardar como ración del corral
       await api.post('/almacen/raciones', {
         id_chiquero: corralId,
         producto,
         cantidad: Number(cantidadFinal),
         unidad: UNIDADES[producto] || 'kg'
       })
-      // Registrar salida del almacén
       await api.post('/almacen/salida-alimento', {
         id_chiquero: corralId,
         producto,
@@ -417,6 +426,7 @@ function Alimento({ onExito }) {
       setMensaje(`✅ ${turno === 'mañana' ? 'Mañana' : 'Tarde'} registrada`)
       setTimeout(() => setMensaje(''), 3000)
       setCantidad('')
+      await cargar()
       onExito()
     } finally {
       setLoading(false)
@@ -424,7 +434,7 @@ function Alimento({ onExito }) {
   }
 
   const repetirRacion = async () => {
-    if (!racionGuardada) return
+    if (!racionGuardada || yaRegistrado) return
     setLoading(true)
     try {
       await api.post('/almacen/salida-alimento', {
@@ -436,6 +446,7 @@ function Alimento({ onExito }) {
       })
       setMensaje(`✅ Ración de la ${turno} registrada`)
       setTimeout(() => setMensaje(''), 3000)
+      await cargar()
       onExito()
     } finally {
       setLoading(false)
@@ -456,7 +467,6 @@ function Alimento({ onExito }) {
         }}>{mensaje}</div>
       )}
 
-      {/* Turno */}
       <div style={{ marginBottom: '14px' }}>
         <label style={labelStyle}>Turno:</label>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -469,31 +479,33 @@ function Alimento({ onExito }) {
         </div>
       </div>
 
-      {/* Corral */}
       <div style={{ marginBottom: '14px' }}>
         <label style={labelStyle}>Corral:</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
             <div key={zona}>
               <div style={{ fontSize: '12px', color: '#888', fontWeight: '600', margin: '4px 0' }}>{zona}</div>
-              {corrales.filter(c => c.zona === zona).map(c => (
-                <button key={c.id} onClick={() => setCorralId(c.id)}
-                  style={{
-                    display: 'block', width: '100%', padding: '10px 14px',
-                    borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                    border: corralId === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
-                    background: corralId === c.id ? '#f1f8e9' : 'white',
-                    fontSize: '14px', marginBottom: '4px'
-                  }}>
-                  <strong>{c.nombre}</strong> — {c.tipo_animal} ({c.poblacion_actual} animales)
-                </button>
-              ))}
+              {corrales.filter(c => c.zona === zona).map(c => {
+                const yaComio = yaAlimento(c.id, turno)
+                return (
+                  <button key={c.id} onClick={() => setCorralId(c.id)}
+                    style={{
+                      display: 'block', width: '100%', padding: '10px 14px',
+                      borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
+                      border: corralId === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
+                      background: yaComio ? '#f1f8e9' : corralId === c.id ? '#e8f5e9' : 'white',
+                      fontSize: '14px', marginBottom: '4px'
+                    }}>
+                    <strong>{c.nombre}</strong> — {c.tipo_animal} ({c.poblacion_actual} animales)
+                    {yaComio && <span style={{ color: '#2E7D32', fontSize: '12px', marginLeft: '8px' }}>✅ Ya comió</span>}
+                  </button>
+                )
+              })}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Producto */}
       <div style={{ marginBottom: '14px' }}>
         <label style={labelStyle}>Alimento:</label>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -504,8 +516,7 @@ function Alimento({ onExito }) {
         </div>
       </div>
 
-      {/* Si hay ración guardada — mostrar botón de repetir */}
-      {corralId && racionGuardada && (
+      {corralId && racionGuardada && !yaRegistrado && (
         <div style={{
           background: '#e3f2fd', border: '1px solid #90caf9',
           borderRadius: '10px', padding: '12px', marginBottom: '14px'
@@ -530,8 +541,17 @@ function Alimento({ onExito }) {
         </div>
       )}
 
-      {/* Cantidad manual */}
-      {(!racionGuardada || cantidad) && corralId && (
+      {yaRegistrado && corralId && (
+        <div style={{
+          background: '#f1f8e9', border: '2px solid #2E7D32',
+          borderRadius: '10px', padding: '12px', marginBottom: '14px',
+          textAlign: 'center', color: '#2E7D32', fontWeight: '700'
+        }}>
+          ✅ Ya se registró el alimento de la {turno} para este corral
+        </div>
+      )}
+
+      {(!racionGuardada || cantidad) && corralId && !yaRegistrado && (
         <div style={{ marginBottom: '14px' }}>
           <label style={labelStyle}>Cantidad ({UNIDADES[producto] || 'kg'}):</label>
           <input type="number" min={0} step={0.5} value={cantidad}
@@ -541,16 +561,18 @@ function Alimento({ onExito }) {
         </div>
       )}
 
-      <button onClick={() => registrar(cantidad)} 
-        disabled={loading || !corralId || !cantidad}
-        style={{
-          width: '100%', padding: '14px',
-          background: loading || !corralId || !cantidad ? '#ccc' : '#2E7D32',
-          color: 'white', border: 'none', borderRadius: '10px',
-          fontSize: '16px', fontWeight: '700', cursor: 'pointer'
-        }}>
-        {loading ? 'Registrando...' : `Registrar ${turno}`}
-      </button>
+      {!yaRegistrado && (
+        <button onClick={() => registrar(cantidad)}
+          disabled={loading || !corralId || !cantidad}
+          style={{
+            width: '100%', padding: '14px',
+            background: loading || !corralId || !cantidad ? '#ccc' : '#2E7D32',
+            color: 'white', border: 'none', borderRadius: '10px',
+            fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+          }}>
+          {loading ? 'Registrando...' : `Registrar ${turno}`}
+        </button>
+      )}
     </div>
   )
 }
