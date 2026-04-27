@@ -17,6 +17,7 @@ import Configuracion from './pages/Configuracion'
 import PrimerAcceso from './pages/PrimerAcceso'
 import Movimientos from './pages/Movimientos'
 import api from './services/api'
+import MiReporte from './pages/MiReporte'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
