@@ -16,6 +16,7 @@ import Ventas from './pages/Ventas'
 import Configuracion from './pages/Configuracion'
 import PrimerAcceso from './pages/PrimerAcceso'
 import api from './services/api'
+import Movimientos from './pages/Movimientos'
 
 function App() {
   const [usuario, setUsuario] = useState(() => {
@@ -163,6 +164,7 @@ function App() {
             ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
             ['checador', '⏰ Checador'],
             ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
+            ...(usuario.rol === 'admin' ? [['movimientos', '📜 Movimientos']] : []),
             ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
             ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
             ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
@@ -203,6 +205,7 @@ function App() {
       {pagina === 'clientes' && <Clientes usuario={usuario} />}
       {pagina === 'ventas' && <Ventas />}
       {pagina === 'configuracion' && <Configuracion />}
+      {pagina === 'movimientos' && <Movimientos />}
     </div>
   )
 }
