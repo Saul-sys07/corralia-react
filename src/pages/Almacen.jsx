@@ -57,7 +57,7 @@ function Almacen({ usuario }) {
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento'], ['gastos', '📋 Gastos']].map(([key, label]) => (
+        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento'], ['gastos', '📋 Gastos'], ['historial', '📅 Semana']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '8px', border: 'none', borderRadius: '8px',
             background: tab === key ? '#2E7D32' : '#f0f0f0',
@@ -74,6 +74,7 @@ function Almacen({ usuario }) {
       {tab === 'tickets' && <Tickets />}
       {tab === 'alimento' && <Alimento onExito={cargarDatos} />}
       {tab === 'gastos' && <Gastos />}
+      {tab === 'historial' && <HistorialAlimento />}
     </div>
   )
 }
@@ -758,6 +759,70 @@ function Gastos() {
           </div>
           <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
             {g.cantidad} {g.unidad} · {g.usuario_id} · {g.fecha ? new Date(g.fecha).toLocaleDateString('es-MX') : '?'}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function HistorialAlimento() {
+  const [historial, setHistorial] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/almacen/historial-alimento').then(r => {
+      setHistorial(r.data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <p style={{ color: '#888' }}>Cargando...</p>
+  if (historial.length === 0) return <p style={{ color: '#888' }}>Sin registros esta semana.</p>
+
+  // Agrupar por día
+  const porDia = historial.reduce((acc, h) => {
+    const dia = h.dia
+    if (!acc[dia]) acc[dia] = []
+    acc[dia].push(h)
+    return acc
+  }, {})
+
+  const totalSemana = historial.reduce((s, h) => s + parseFloat(h.total_cantidad), 0)
+
+  return (
+    <div>
+      <div style={{
+        background: '#e3f2fd', border: '1px solid #90caf9',
+        borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <span style={{ color: '#666', fontSize: '13px' }}>Total consumido esta semana</span>
+        <strong style={{ color: '#1976D2', fontSize: '18px' }}>
+          {totalSemana.toFixed(1)} kg/bts
+        </strong>
+      </div>
+
+      {Object.entries(porDia).map(([dia, registros]) => (
+        <div key={dia} style={{ marginBottom: '16px' }}>
+          <div style={{
+            background: '#2E7D32', color: 'white',
+            padding: '8px 12px', borderRadius: '8px 8px 0 0',
+            fontWeight: '700', fontSize: '14px'
+          }}>
+            📅 {new Date(dia + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </div>
+          <div style={{ border: '2px solid #2E7D32', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '8px' }}>
+            {registros.map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '6px 10px', background: i % 2 === 0 ? '#f9f9f9' : 'white',
+                borderRadius: '6px', marginBottom: '2px', fontSize: '13px'
+              }}>
+                <span>{r.notas?.replace('Alimentación ', '').split(' — ')[0]} · {r.producto}</span>
+                <strong>{parseFloat(r.total_cantidad).toFixed(1)} {r.unidad}</strong>
+              </div>
+            ))}
           </div>
         </div>
       ))}
