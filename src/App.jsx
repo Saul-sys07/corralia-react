@@ -15,8 +15,18 @@ import Clientes from './pages/Clientes'
 import Ventas from './pages/Ventas'
 import Configuracion from './pages/Configuracion'
 import PrimerAcceso from './pages/PrimerAcceso'
-import api from './services/api'
 import Movimientos from './pages/Movimientos'
+import api from './services/api'
+
+function useAncho() {
+  const [ancho, setAncho] = useState(window.innerWidth)
+  useEffect(() => {
+    const handler = () => setAncho(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return ancho
+}
 
 function App() {
   const [usuario, setUsuario] = useState(() => {
@@ -32,6 +42,8 @@ function App() {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [tokenTemporal, setTokenTemporal] = useState(null)
   const [yaCheco, setYaCheco] = useState(null)
+  const ancho = useAncho()
+  const esTablet = ancho >= 768
 
   const ROLES_CON_CHECADOR = ['parideras', 'crecimiento', 'gestacion', 'ayudante_general']
 
@@ -81,7 +93,6 @@ function App() {
       onActivar={(u) => { setUsuario(u); setPagina('mapa') }} />
   }
 
-  // Trabajadores de zona — si no han checado, primero el checador
   if (ROLES_CON_CHECADOR.includes(usuario.rol) && yaCheco === false) {
     return (
       <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui' }}>
@@ -108,6 +119,105 @@ function App() {
   const mostrarBannerBeyin = usuario.rol === 'encargado_general' && yaCheco === false
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta'].includes(pagina)
 
+  const menuItems = [
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
+    ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
+    ['checador', '⏰ Checador'],
+    ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
+    ...(usuario.rol === 'admin' ? [['movimientos', '📜 Movimientos']] : []),
+    ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
+    ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
+    ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
+    ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
+  ]
+
+  const Contenido = () => (
+    <>
+      {pagina === 'mapa' && <Mapa usuario={usuario} onAccion={handleAccion} />}
+      {pagina === 'almacen' && <Almacen usuario={usuario} />}
+      {pagina === 'muerte' && corralSeleccionado && <Muerte corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'traspaso' && corralSeleccionado && <Traslado corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'etapa' && corralSeleccionado && <Etapa corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'parto' && corralSeleccionado && <Parto corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'venta' && corralSeleccionado && <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
+      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
+      {pagina === 'vacunas' && <Vacunas usuario={usuario} />}
+      {pagina === 'reportes' && <Reportes />}
+      {pagina === 'clientes' && <Clientes usuario={usuario} />}
+      {pagina === 'ventas' && <Ventas />}
+      {pagina === 'configuracion' && <Configuracion />}
+      {pagina === 'movimientos' && <Movimientos />}
+    </>
+  )
+
+  // Layout tablet/laptop — sidebar fijo
+  if (esTablet) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui' }}>
+        {/* Sidebar */}
+        <div style={{
+          width: '220px', minWidth: '220px', background: '#1B5E20',
+          display: 'flex', flexDirection: 'column',
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
+          overflowY: 'auto'
+        }}>
+          {/* Logo */}
+          <div style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ fontWeight: '800', fontSize: '20px', color: 'white' }}>🐖 Corralia</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+              {usuario.nombre} · {usuario.rol}
+            </div>
+          </div>
+
+          {/* Nav items */}
+          <nav style={{ flex: 1, padding: '8px' }}>
+            {menuItems.map(([pag, label]) => (
+              <button key={pag} onClick={() => irA(pag)} style={{
+                display: 'block', width: '100%', padding: '10px 14px',
+                background: pagina === pag ? 'rgba(255,255,255,0.2)' : 'transparent',
+                border: 'none', borderRadius: '8px', cursor: 'pointer',
+                textAlign: 'left', color: 'white',
+                fontWeight: pagina === pag ? '700' : '400',
+                fontSize: '14px', marginBottom: '2px'
+              }}>{label}</button>
+            ))}
+          </nav>
+
+          {/* Banner Beyin */}
+          {mostrarBannerBeyin && (
+            <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: '12px', color: '#FFD54F', marginBottom: '6px' }}>
+                ⚠️ Sin checar hoy
+              </div>
+              <button onClick={() => irA('checador')} style={{
+                width: '100%', background: '#F57F17', color: 'white',
+                border: 'none', borderRadius: '6px', padding: '8px',
+                fontSize: '13px', cursor: 'pointer', fontWeight: '600'
+              }}>Checar ahora</button>
+            </div>
+          )}
+
+          {/* Salir */}
+          <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={handleLogout} style={{
+              width: '100%', background: 'rgba(255,255,255,0.1)', border: 'none',
+              color: 'white', padding: '8px', borderRadius: '6px',
+              cursor: 'pointer', fontSize: '13px'
+            }}>🚪 Salir</button>
+          </div>
+        </div>
+
+        {/* Contenido principal */}
+        <div style={{ marginLeft: '220px', flex: 1, minHeight: '100vh', background: '#fafafa' }}>
+          <Contenido />
+        </div>
+      </div>
+    )
+  }
+
+  // Layout celular — header + menú hamburguesa
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui' }}>
       <div style={{
@@ -158,18 +268,7 @@ function App() {
           position: 'sticky', top: '50px', zIndex: 99,
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
         }}>
-          {[
-            ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa de Corrales']] : []),
-            ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
-            ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
-            ['checador', '⏰ Checador'],
-            ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
-            ...(usuario.rol === 'admin' ? [['movimientos', '📜 Movimientos']] : []),
-            ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
-            ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
-            ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
-            ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
-          ].map(([pag, label]) => (
+          {menuItems.map(([pag, label]) => (
             <button key={pag} onClick={() => irA(pag)} style={{
               display: 'block', width: '100%', padding: '12px 16px',
               background: pagina === pag ? '#f1f8e9' : 'white',
@@ -181,31 +280,7 @@ function App() {
         </div>
       )}
 
-      {pagina === 'mapa' && <Mapa usuario={usuario} onAccion={handleAccion} />}
-      {pagina === 'almacen' && <Almacen usuario={usuario} />}
-      {pagina === 'muerte' && corralSeleccionado && (
-        <Muerte corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
-      )}
-      {pagina === 'traspaso' && corralSeleccionado && (
-        <Traslado corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
-      )}
-      {pagina === 'etapa' && corralSeleccionado && (
-        <Etapa corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
-      )}
-      {pagina === 'parto' && corralSeleccionado && (
-        <Parto corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
-      )}
-      {pagina === 'venta' && corralSeleccionado && (
-        <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />
-      )}
-      {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
-      {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
-      {pagina === 'vacunas' && <Vacunas usuario={usuario} />}
-      {pagina === 'reportes' && <Reportes />}
-      {pagina === 'clientes' && <Clientes usuario={usuario} />}
-      {pagina === 'ventas' && <Ventas />}
-      {pagina === 'configuracion' && <Configuracion />}
-      {pagina === 'movimientos' && <Movimientos />}
+      <Contenido />
     </div>
   )
 }
