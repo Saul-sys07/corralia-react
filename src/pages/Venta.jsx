@@ -127,23 +127,37 @@ function Venta({ corral, usuario, onVolver }) {
       )}
 
       {/* Cliente */}
-      <div style={{ marginBottom: '16px' }}>
-        <label style={labelStyle}>Cliente:</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {clientes.map(c => (
-            <button key={c.id} onClick={() => setCliente(c)}
-              style={{
-                padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
-                border: cliente?.id === c.id ? '2px solid #2E7D32' : '2px solid #ddd',
-                background: cliente?.id === c.id ? '#f1f8e9' : 'white',
-                textAlign: 'left', fontSize: '14px'
-              }}>
-              <strong>{c.nombre}</strong> — {c.tipo}
-              <span style={{ color: '#888', fontSize: '12px' }}> · ${COMISIONES[c.tipo]}/kg comisión</span>
-            </button>
-          ))}
-        </div>
-      </div>
+<div style={{ marginBottom: '16px' }}>
+  <label style={labelStyle}>Cliente:</label>
+  <select
+    value={cliente?.id || ''}
+    onChange={e => {
+      const c = clientes.find(c => c.id === Number(e.target.value))
+      setCliente(c || null)
+    }}
+    style={{
+      width: '100%', padding: '12px', fontSize: '16px',
+      border: '1px solid #ddd', borderRadius: '8px',
+      boxSizing: 'border-box', background: 'white',
+      color: cliente ? '#333' : '#888'
+    }}
+  >
+    <option value=''>— Selecciona un cliente —</option>
+    {clientes.map(c => (
+      <option key={c.id} value={c.id}>
+        {c.nombre} — {c.tipo} (${COMISIONES[c.tipo]}/kg)
+      </option>
+    ))}
+  </select>
+  {cliente && (
+    <div style={{
+      marginTop: '6px', padding: '8px 12px',
+      background: '#f1f8e9', borderRadius: '8px', fontSize: '13px', color: '#2E7D32'
+    }}>
+      ✅ {cliente.nombre} · Comisión: ${COMISIONES[cliente.tipo]}/kg
+    </div>
+  )}
+</div>
 
       {/* Precio kg — solo admin puede cambiar */}
       {!esDestete && (

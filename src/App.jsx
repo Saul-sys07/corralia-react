@@ -162,7 +162,7 @@ function App() {
             ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
             ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
             ['checador', '⏰ Checador'],
-            ...((['admin', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
+            ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
             ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
             ...(usuario.rol === 'admin' ? [['clientes', '👤 Clientes']] : []),
             ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
