@@ -5,7 +5,6 @@ const COLORES_EVENTO = {
   'MUERTE': { bg: '#ffebee', color: '#C62828', emoji: '💀' },
   'TRASPASO': { bg: '#e3f2fd', color: '#1565C0', emoji: '🔄' },
   'PARTO': { bg: '#f3e5f5', color: '#6A1B9A', emoji: '🍼' },
-  'VENTA': { bg: '#e8f5e9', color: '#1B5E20', emoji: '💰' },
   'CAMBIO_ESTADO': { bg: '#fff8e1', color: '#F57F17', emoji: '📦' },
   'ENTRADA': { bg: '#e8f5e9', color: '#2E7D32', emoji: '➕' },
 }
@@ -17,12 +16,12 @@ function MiReporte() {
 
   useEffect(() => {
     api.get('/historial/movimientos').then(r => {
-      setMovimientos(r.data)
+      setMovimientos(r.data.filter(m => m.tipo_evento !== 'VENTA'))
       setLoading(false)
     })
   }, [])
 
-  const tipos = ['TODOS', 'MUERTE', 'TRASPASO', 'PARTO', 'VENTA', 'CAMBIO_ESTADO']
+  const tipos = ['TODOS', 'MUERTE', 'TRASPASO', 'PARTO', 'CAMBIO_ESTADO']
   const filtrados = filtro === 'TODOS' ? movimientos : movimientos.filter(m => m.tipo_evento === filtro)
 
   if (loading) return <p style={{ padding: '16px', color: '#888' }}>Cargando...</p>
