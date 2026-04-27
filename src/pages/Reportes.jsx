@@ -11,22 +11,30 @@ function Reportes() {
   const [reporte, setReporte] = useState(null)
   const [ica, setIca] = useState([])
   const [loading, setLoading] = useState(false)
+  const [icaInicio, setIcaInicio] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 30)
+    return d.toISOString().split('T')[0]
+  })
+  const [icaFin, setIcaFin] = useState(() => new Date().toISOString().split('T')[0])
 
   const cargar = async () => {
     setLoading(true)
     try {
-      const [r, icaData] = await Promise.all([
-        api.get(`/reportes/mensual?mes=${mes}&anio=${anio}`),
-        api.get('/reportes/ica')
-      ])
+      const r = await api.get(`/reportes/mensual?mes=${mes}&anio=${anio}`)
       setReporte(r.data)
-      setIca(icaData.data)
     } finally {
       setLoading(false)
     }
   }
 
+  const cargarIca = async () => {
+    const r = await api.get(`/reportes/ica?fecha_inicio=${icaInicio}&fecha_fin=${icaFin}`)
+    setIca(r.data)
+  }
+
   useEffect(() => { cargar() }, [mes, anio])
+  useEffect(() => { cargarIca() }, [icaInicio, icaFin])
 
   return (
     <div style={{ padding: '16px' }}>
@@ -129,50 +137,6 @@ function Reportes() {
             </div>
           </div>
 
-          {/* ICA por corral */}
-          {ica.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ margin: '0 0 4px', color: '#444' }}>🌽 ICA por corral — últimos 30 días</h4>
-              <p style={{ fontSize: '12px', color: '#888', margin: '0 0 8px' }}>
-                Índice de Conversión Alimenticia: kg alimento ÷ kg vendidos. Estándar: 2.5 o menos.
-              </p>
-              {ica.map((r, i) => {
-                const bueno = r.ica !== null && r.ica <= 2.5
-                const sinVentas = r.ica === null
-                return (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 14px', background: '#f9f9f9',
-                    borderRadius: '8px', marginBottom: '4px',
-                    borderLeft: `4px solid ${sinVentas ? '#9E9E9E' : bueno ? '#2E7D32' : '#C62828'}`
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '14px' }}>{r.corral}</div>
-                      <div style={{ fontSize: '12px', color: '#888' }}>
-                        {r.kg_alimento.toFixed(1)} kg alimento · {r.kg_vendidos.toFixed(1)} kg vendidos
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      {sinVentas ? (
-                        <span style={{ fontSize: '13px', color: '#9E9E9E' }}>Sin ventas</span>
-                      ) : (
-                        <>
-                          <div style={{
-                            fontSize: '20px', fontWeight: '800',
-                            color: bueno ? '#2E7D32' : '#C62828'
-                          }}>{r.ica}</div>
-                          <div style={{ fontSize: '11px', color: bueno ? '#2E7D32' : '#C62828' }}>
-                            {bueno ? '✅ Bien' : '⚠️ Alto'}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
           {/* Comparativa */}
           {(reporte.anterior.ventas > 0 || reporte.anterior.almacen > 0) && (
             <div style={{ marginBottom: '20px' }}>
@@ -213,6 +177,60 @@ function Reportes() {
           )}
         </div>
       )}
+
+      {/* ICA zona Crecimiento — fuera del bloque del reporte mensual */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '0 0 4px', color: '#444' }}>🌽 ICA zona Crecimiento</h4>
+        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 8px' }}>
+          Índice de Conversión Alimenticia. Estándar: 2.5 o menos. Define el período de una camada.
+        </p>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>Desde:</label>
+            <input type="date" value={icaInicio} onChange={e => setIcaInicio(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>Hasta:</label>
+            <input type="date" value={icaFin} onChange={e => setIcaFin(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' }} />
+          </div>
+        </div>
+        {ica.length === 0 && <p style={{ color: '#888', fontSize: '13px' }}>Sin datos en este período.</p>}
+        {ica.map((r, i) => {
+          const bueno = r.ica !== null && r.ica <= 2.5
+          const sinVentas = r.ica === null
+          return (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 14px', background: '#f9f9f9',
+              borderRadius: '8px', marginBottom: '4px',
+              borderLeft: `4px solid ${sinVentas ? '#9E9E9E' : bueno ? '#2E7D32' : '#C62828'}`
+            }}>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '14px' }}>{r.corral}</div>
+                <div style={{ fontSize: '12px', color: '#888' }}>
+                  {r.kg_alimento.toFixed(1)} kg alimento · {r.kg_vendidos.toFixed(1)} kg vendidos · {r.num_ventas} ventas
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                {sinVentas ? (
+                  <span style={{ fontSize: '13px', color: '#9E9E9E' }}>Sin ventas</span>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '20px', fontWeight: '800', color: bueno ? '#2E7D32' : '#C62828' }}>
+                      {r.ica}
+                    </div>
+                    <div style={{ fontSize: '11px', color: bueno ? '#2E7D32' : '#C62828' }}>
+                      {bueno ? '✅ Bien' : '⚠️ Alto'}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
