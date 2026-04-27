@@ -57,7 +57,7 @@ function Almacen({ usuario }) {
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento']].map(([key, label]) => (
+        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento'], ['gastos', '📋 Gastos']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '8px', border: 'none', borderRadius: '8px',
             background: tab === key ? '#2E7D32' : '#f0f0f0',
@@ -73,6 +73,7 @@ function Almacen({ usuario }) {
       {tab === 'revoltura' && <Revoltura inventario={inventario} onExito={cargarDatos} />}
       {tab === 'tickets' && <Tickets />}
       {tab === 'alimento' && <Alimento onExito={cargarDatos} />}
+      {tab === 'gastos' && <Gastos />}
     </div>
   )
 }
@@ -712,6 +713,54 @@ function ZonaAlimento({ zona, corrales, corralId, turno, yaAlimento, onSelect })
           })}
         </div>
       )}
+    </div>
+  )
+}
+function Gastos() {
+  const [gastos, setGastos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/almacen/gastos').then(r => {
+      setGastos(r.data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <p style={{ color: '#888' }}>Cargando...</p>
+  if (gastos.length === 0) return <p style={{ color: '#888' }}>Sin gastos registrados.</p>
+
+  const total = gastos.reduce((s, g) => s + (parseFloat(g.costo) || 0), 0)
+
+  return (
+    <div>
+      <div style={{
+        background: '#fff8e1', border: '1px solid #ffe082',
+        borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <span style={{ color: '#666', fontSize: '13px' }}>Total gastos registrados</span>
+        <strong style={{ color: '#F57F17', fontSize: '18px' }}>
+          ${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+        </strong>
+      </div>
+
+      {gastos.map((g, i) => (
+        <div key={i} style={{
+          border: '1px solid #ddd', borderRadius: '10px',
+          padding: '10px 14px', marginBottom: '6px', background: 'white'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong style={{ fontSize: '14px' }}>{g.producto}</strong>
+            <strong style={{ color: '#C62828' }}>
+              ${parseFloat(g.costo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+            {g.cantidad} {g.unidad} · {g.usuario_id} · {g.fecha ? new Date(g.fecha).toLocaleDateString('es-MX') : '?'}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
