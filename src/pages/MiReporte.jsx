@@ -11,20 +11,13 @@ const COLORES_EVENTO = {
 }
 
 function MiReporte() {
-  const [ica, setIca] = useState([])
   const [movimientos, setMovimientos] = useState([])
   const [filtro, setFiltro] = useState('TODOS')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      api.get('/reportes/ica'),
-      api.get('/historial/movimientos')
-    ]).then(([icaRes, movRes]) => {
-      setIca(icaRes.data.filter(r => r.corral?.toLowerCase().includes('chiquero') ||
-        r.corral?.toLowerCase().includes('crecimiento') ||
-        r.corral?.toLowerCase().includes('engorda')))
-      setMovimientos(movRes.data)
+    api.get('/historial/movimientos').then(r => {
+      setMovimientos(r.data)
       setLoading(false)
     })
   }, [])
@@ -39,51 +32,6 @@ function MiReporte() {
       <h2 style={{ margin: '0 0 4px' }}>📊 Mi Reporte</h2>
       <p style={{ color: '#888', fontSize: '13px', margin: '0 0 20px' }}>Rancho Yáñez — Atlacomulco</p>
 
-      {/* ICA */}
-      <div style={{ marginBottom: '24px' }}>
-        <h4 style={{ margin: '0 0 4px', color: '#444' }}>🌽 Conversión de alimento</h4>
-        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 8px' }}>
-          Estándar: 2.5 o menos. Entre más bajo mejor.
-        </p>
-        {ica.length === 0 && (
-          <p style={{ color: '#888', fontSize: '13px' }}>Sin datos suficientes aún.</p>
-        )}
-        {ica.map((r, i) => {
-          const bueno = r.ica !== null && r.ica <= 2.5
-          const sinVentas = r.ica === null
-          return (
-            <div key={i} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '10px 14px', background: '#f9f9f9',
-              borderRadius: '8px', marginBottom: '4px',
-              borderLeft: `4px solid ${sinVentas ? '#9E9E9E' : bueno ? '#2E7D32' : '#C62828'}`
-            }}>
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '14px' }}>{r.corral}</div>
-                <div style={{ fontSize: '12px', color: '#888' }}>
-                  {r.kg_alimento.toFixed(1)} kg alimento · {r.kg_vendidos.toFixed(1)} kg vendidos
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                {sinVentas ? (
-                  <span style={{ fontSize: '13px', color: '#9E9E9E' }}>Sin ventas</span>
-                ) : (
-                  <>
-                    <div style={{ fontSize: '20px', fontWeight: '800', color: bueno ? '#2E7D32' : '#C62828' }}>
-                      {r.ica}
-                    </div>
-                    <div style={{ fontSize: '11px', color: bueno ? '#2E7D32' : '#C62828' }}>
-                      {bueno ? '✅ Bien' : '⚠️ Alto'}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Movimientos */}
       <div>
         <h4 style={{ margin: '0 0 8px', color: '#444' }}>📜 Movimientos recientes</h4>
 
