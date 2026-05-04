@@ -37,7 +37,7 @@ function App() {
   const [pagina, setPagina] = useState(() => {
     const u = localStorage.getItem('usuario')
     const rol = u ? JSON.parse(u).rol : null
-    return ['parideras', 'crecimiento', 'gestacion', 'ayudante_general'].includes(rol) ? 'checador' : 'mapa'
+    return ['ayudante_general'].includes(rol) ? 'checador' : 'mapa'
   })
   const [corralSeleccionado, setCorralSeleccionado] = useState(null)
   const [menuAbierto, setMenuAbierto] = useState(false)
@@ -121,7 +121,7 @@ function App() {
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta'].includes(pagina)
 
   const menuItems = [
-    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
+    ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
     ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
     ['checador', '⏰ Checador'],
