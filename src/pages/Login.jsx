@@ -19,6 +19,12 @@ function Login({ onLogin }) {
 
   const handleLogin = async () => {
     if (!pin) return
+    
+    if (!ubicacion) {
+      setError('Activa la ubicación para acceder a la app')
+      return
+    }
+    
     setLoading(true)
     setError('')
     try {
