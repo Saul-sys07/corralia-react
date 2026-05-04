@@ -11,7 +11,8 @@ function Login({ onLogin }) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUbicacion({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setUbicacion(null)
+        () => setUbicacion(null),
+        { timeout: 10000, enableHighAccuracy: true }
       )
     }
   }, [])
