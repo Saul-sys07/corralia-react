@@ -9,36 +9,75 @@ function Login({ onLogin }) {
   const obtenerUbicacion = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject({ code: 0 })
+        reject({ code: 0, message: 'Geolocalización no soportada' })
         return
       }
+
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => reject(err),
-        { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
+        (pos) => {
+          console.log('GPS OK:', pos.coords)
+
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          })
+        },
+        (err) => {
+          console.log('GPS ERROR:', err)
+          reject(err)
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 30000,
+          maximumAge: 60000
+        }
       )
     })
   }
 
   const handleLogin = async () => {
     if (!pin) return
+
     setLoading(true)
     setError('')
+
     try {
       let lat = null
       let lng = null
+
       try {
         const ubicacion = await obtenerUbicacion()
+
+        console.log('UBICACION OBTENIDA:', ubicacion)
+
         lat = ubicacion.lat
         lng = ubicacion.lng
       } catch (e) {
+        console.log('ERROR OBTENIENDO GPS:', e)
+
         if (e.code === 1) {
           setError('Debes permitir la ubicación para acceder')
           setLoading(false)
           return
         }
+
+        setError('No se pudo obtener ubicación')
       }
-      const res = await api.post('/login', { pin, lat, lng })
+
+      console.log('ENVIANDO LOGIN:', {
+        pin,
+        lat,
+        lng
+      })
+
+      const res = await api.post('/login', {
+        pin,
+        lat,
+        lng
+      })
+
+      console.log('RESPUESTA LOGIN:', res.data)
+
       if (res.data.usuario.primer_acceso) {
         onLogin(res.data.usuario, res.data.token)
       } else {
@@ -47,27 +86,73 @@ function Login({ onLogin }) {
         onLogin(res.data.usuario)
       }
     } catch (e) {
+      console.log('ERROR LOGIN:', e)
       setError('PIN incorrecto')
     } finally {
       setLoading(false)
     }
   }
 
+  const probarGPS = () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        console.log('GPS FUNCIONA:', pos.coords)
+
+        alert(
+          `LAT: ${pos.coords.latitude}
+LNG: ${pos.coords.longitude}`
+        )
+      },
+      (err) => {
+        console.log('GPS FALLÓ:', err)
+
+        alert('ERROR GPS: ' + JSON.stringify(err))
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 30000,
+        maximumAge: 60000
+      }
+    )
+  }
+
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'center',
-      alignItems: 'center', height: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div style={{
-        background: 'white', padding: '40px',
-        borderRadius: '12px', width: '320px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-        textAlign: 'center'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '8px' }}>🐖</div>
-        <h2 style={{ margin: '0 0 4px' }}>Corralia v4</h2>
-        <p style={{ color: '#888', margin: '0 0 24px', fontSize: '14px' }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f5f5f5'
+      }}
+    >
+      <div
+        style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          width: '320px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          textAlign: 'center',
+          maxHeight: '90vh',
+          overflowY: 'auto'
+        }}
+      >
+        <div style={{ fontSize: '48px', marginBottom: '8px' }}>
+          🐖
+        </div>
+
+        <h2 style={{ margin: '0 0 4px' }}>
+          Corralia v4
+        </h2>
+
+        <p
+          style={{
+            color: '#888',
+            margin: '0 0 24px',
+            fontSize: '14px'
+          }}
+        >
           Rancho Yáñez — Atlacomulco
         </p>
 
@@ -76,22 +161,37 @@ function Login({ onLogin }) {
           placeholder="PIN de acceso"
           value={pin}
           onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+            const val = e.target.value
+              .replace(/\D/g, '')
+              .slice(0, 6)
+
             setPin(val)
           }}
-          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+          onKeyDown={(e) =>
+            e.key === 'Enter' && handleLogin()
+          }
           style={{
-            width: '100%', padding: '12px',
-            borderRadius: '8px', border: '1px solid #ddd',
-            fontSize: '16px', marginBottom: '12px',
-            boxSizing: 'border-box', textAlign: 'center',
+            width: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            border: '1px solid #ddd',
+            fontSize: '16px',
+            marginBottom: '12px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
             letterSpacing: '4px'
           }}
           autoFocus
         />
 
         {error && (
-          <p style={{ color: '#c62828', fontSize: '14px', margin: '0 0 12px' }}>
+          <p
+            style={{
+              color: '#c62828',
+              fontSize: '14px',
+              margin: '0 0 12px'
+            }}
+          >
             {error}
           </p>
         )}
@@ -100,33 +200,39 @@ function Login({ onLogin }) {
           onClick={handleLogin}
           disabled={loading || !pin}
           style={{
-            width: '100%', padding: '12px',
+            width: '100%',
+            padding: '12px',
             backgroundColor: loading ? '#ccc' : '#2E7D32',
-            color: 'white', border: 'none',
-            borderRadius: '8px', fontSize: '16px',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
             cursor: loading ? 'not-allowed' : 'pointer',
             fontWeight: '600'
           }}
         >
           {loading ? 'Obteniendo ubicación...' : 'Ingresar'}
         </button>
+
         <button
-  onClick={async () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => alert(`LAT: ${pos.coords.latitude}\nLNG: ${pos.coords.longitude}`),
-      (err) => alert('ERROR GPS: ' + JSON.stringify(err)),
-      { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
-    )
-  }}
-  style={{ marginTop: '8px', background: 'none', border: '1px solid #ddd', borderRadius: '8px', padding: '8px', width: '100%', cursor: 'pointer', fontSize: '13px', color: '#888' }}
->
-  🧪 Probar GPS
-</button>
+          onClick={probarGPS}
+          style={{
+            marginTop: '10px',
+            width: '100%',
+            padding: '10px',
+            background: '#fafafa',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: '#666'
+          }}
+        >
+          🧪 Probar GPS
+        </button>
       </div>
     </div>
   )
 }
-
-
 
 export default Login
