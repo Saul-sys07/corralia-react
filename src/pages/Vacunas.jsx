@@ -32,7 +32,7 @@ const VACUNAS_POR_TIPO = {
   ],
 }
 
-function Vacunas({ usuario }) {
+function Vacunas({ usuario, onVolver }) {
   const [tab, setTab] = useState('registrar')
   const [corrales, setCorrales] = useState([])
   const [historial, setHistorial] = useState([])
@@ -51,6 +51,14 @@ function Vacunas({ usuario }) {
   return (
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px' }}>💉 Vacunas y Castraciones</h2>
+      <h2 style={{ margin: '0 0 16px' }}>💉 Vacunas y Castraciones</h2>
+
+{onVolver && (
+  <button onClick={onVolver} style={{
+    background: 'none', border: 'none', color: '#1976D2',
+    fontSize: '14px', cursor: 'pointer', marginBottom: '12px', padding: 0
+  }}>← Regresar al mapa</button>
+)}
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
         {[['registrar', '📝 Registrar'], ['historial', '📋 Historial']].map(([key, label]) => (
