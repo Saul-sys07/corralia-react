@@ -1,36 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../services/api'
 
 function Login({ onLogin }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [ubicacion, setUbicacion] = useState(null)
 
-  useEffect(() => {
-    if (navigator.geolocation) {
+  const obtenerUbicacion = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject({ code: 0 })
+        return
+      }
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUbicacion({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setUbicacion(null),
-        { timeout: 10000, enableHighAccuracy: true }
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       )
-    }
-  }, [])
+    })
+  }
 
   const handleLogin = async () => {
     if (!pin) return
-    if (!ubicacion) {
-      setError('Activa la ubicación para acceder a la app')
-      return
-    }
     setLoading(true)
     setError('')
     try {
-      const res = await api.post('/login', {
-        pin,
-        lat: ubicacion.lat,
-        lng: ubicacion.lng
-      })
+      let lat = null
+      let lng = null
+      try {
+        const ubicacion = await obtenerUbicacion()
+        lat = ubicacion.lat
+        lng = ubicacion.lng
+      } catch (e) {
+        if (e.code === 1) {
+          setError('Debes permitir la ubicación para acceder')
+          setLoading(false)
+          return
+        }
+      }
+      const res = await api.post('/login', { pin, lat, lng })
       if (res.data.usuario.primer_acceso) {
         onLogin(res.data.usuario, res.data.token)
       } else {
@@ -62,16 +70,6 @@ function Login({ onLogin }) {
         <p style={{ color: '#888', margin: '0 0 24px', fontSize: '14px' }}>
           Rancho Yáñez — Atlacomulco
         </p>
-
-        <div style={{
-          background: ubicacion ? '#f1f8e9' : '#fff8e1',
-          border: `1px solid ${ubicacion ? '#c5e1a5' : '#ffe082'}`,
-          borderRadius: '8px', padding: '8px 12px',
-          marginBottom: '16px', fontSize: '13px',
-          color: ubicacion ? '#2E7D32' : '#F57F17'
-        }}>
-          {ubicacion ? '📍 Ubicación detectada' : '📍 Esperando ubicación...'}
-        </div>
 
         <input
           type="password"
