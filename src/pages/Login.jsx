@@ -116,9 +116,7 @@ export default function Login({ onLogin }) {
           🐖
         </div>
 
-        <h2 style={{ color: 'red' }}>
-  PRUEBA GPS
-</h2>
+        <h2>Corralia v4</h2>
 
         <p
           style={{
