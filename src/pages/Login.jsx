@@ -1,19 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../services/api'
 
 function Login({ onLogin }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ubicacion, setUbicacion] = useState(null)
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUbicacion({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setUbicacion(null)
+      )
+    }
+  }, [])
 
   const handleLogin = async () => {
     if (!pin) return
     setLoading(true)
     setError('')
     try {
-      const res = await api.post('/login', { pin })
+      const res = await api.post('/login', {
+        pin,
+        lat: ubicacion?.lat || null,
+        lng: ubicacion?.lng || null
+      })
       if (res.data.usuario.primer_acceso) {
-        // No guardar token todavia — esperar a que cree su PIN
         onLogin(res.data.usuario, res.data.token)
       } else {
         localStorage.setItem('token', res.data.token)
