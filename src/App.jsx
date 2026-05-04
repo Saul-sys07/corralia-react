@@ -145,7 +145,7 @@ function App() {
       {pagina === 'venta' && corralSeleccionado && <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
       {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
-      {pagina === 'vacunas' && <Vacunas usuario={usuario} onVolver={ROLES_CON_CHECADOR.includes(usuario.rol) ? () => irA('mapa') : null} />}
+      {pagina === 'vacunas' && <Vacunas usuario={usuario} onVolver={['parideras', 'crecimiento', 'gestacion'].includes(usuario.rol) ? () => irA('mapa') : null} />}
       {pagina === 'reportes' && <Reportes />}
       {pagina === 'clientes' && <Clientes usuario={usuario} />}
       {pagina === 'ventas' && <Ventas />}
