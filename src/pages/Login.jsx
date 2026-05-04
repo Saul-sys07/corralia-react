@@ -19,19 +19,17 @@ function Login({ onLogin }) {
 
   const handleLogin = async () => {
     if (!pin) return
-    
     if (!ubicacion) {
       setError('Activa la ubicación para acceder a la app')
       return
     }
-    
     setLoading(true)
     setError('')
     try {
       const res = await api.post('/login', {
         pin,
-        lat: ubicacion?.lat || null,
-        lng: ubicacion?.lng || null
+        lat: ubicacion.lat,
+        lng: ubicacion.lng
       })
       if (res.data.usuario.primer_acceso) {
         onLogin(res.data.usuario, res.data.token)
@@ -64,6 +62,16 @@ function Login({ onLogin }) {
         <p style={{ color: '#888', margin: '0 0 24px', fontSize: '14px' }}>
           Rancho Yáñez — Atlacomulco
         </p>
+
+        <div style={{
+          background: ubicacion ? '#f1f8e9' : '#fff8e1',
+          border: `1px solid ${ubicacion ? '#c5e1a5' : '#ffe082'}`,
+          borderRadius: '8px', padding: '8px 12px',
+          marginBottom: '16px', fontSize: '13px',
+          color: ubicacion ? '#2E7D32' : '#F57F17'
+        }}>
+          {ubicacion ? '📍 Ubicación detectada' : '📍 Esperando ubicación...'}
+        </div>
 
         <input
           type="password"
