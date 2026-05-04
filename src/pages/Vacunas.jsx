@@ -51,7 +51,6 @@ function Vacunas({ usuario, onVolver }) {
   return (
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px' }}>💉 Vacunas y Castraciones</h2>
-      <h2 style={{ margin: '0 0 16px' }}>💉 Vacunas y Castraciones</h2>
 
 {onVolver && (
   <button onClick={onVolver} style={{
