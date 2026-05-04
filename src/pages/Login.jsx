@@ -126,5 +126,33 @@ function Login({ onLogin }) {
     </div>
   )
 }
+<button
+  onClick={async () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        console.log("GPS FUNCIONA")
+        console.log(pos.coords)
+
+        alert(
+          `LAT: ${pos.coords.latitude}
+LNG: ${pos.coords.longitude}`
+        )
+      },
+      (err) => {
+        console.log("GPS ERROR")
+        console.log(err)
+
+        alert(JSON.stringify(err))
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 30000,
+        maximumAge: 60000
+      }
+    )
+  }}
+>
+  Probar GPS
+</button>
 
 export default Login
