@@ -21,49 +21,37 @@ function Login({ onLogin }) {
   }
 
   const handleLogin = async () => {
-  if (!pin) return
-
-  setLoading(true)
-  setError('')
-
-  try {
-    let lat = null
-    let lng = null
-
+    if (!pin) return
+    setLoading(true)
+    setError('')
     try {
-      const ubicacion = await obtenerUbicacion()
-
-      console.log("UBICACION OBTENIDA:")
-      console.log(ubicacion)
-
-      lat = ubicacion.lat
-      lng = ubicacion.lng
-
+      let lat = null
+      let lng = null
+      try {
+        const ubicacion = await obtenerUbicacion()
+        lat = ubicacion.lat
+        lng = ubicacion.lng
+      } catch (e) {
+        if (e.code === 1) {
+          setError('Debes permitir la ubicación para acceder')
+          setLoading(false)
+          return
+        }
+      }
+      const res = await api.post('/login', { pin, lat, lng })
+      if (res.data.usuario.primer_acceso) {
+        onLogin(res.data.usuario, res.data.token)
+      } else {
+        localStorage.setItem('token', res.data.token)
+        localStorage.setItem('usuario', JSON.stringify(res.data.usuario))
+        onLogin(res.data.usuario)
+      }
     } catch (e) {
-      console.log("ERROR GPS:")
-      console.log(e)
-
-      setError("Error GPS: " + e.message)
+      setError('PIN incorrecto')
+    } finally {
+      setLoading(false)
     }
-
-    console.log("ENVIANDO:")
-    console.log({ pin, lat, lng })
-
-    const res = await api.post('/login', {
-      pin,
-      lat,
-      lng
-    })
-
-    console.log(res.data)
-
-  } catch (e) {
-    console.log(e)
-    setError('PIN incorrecto')
-  } finally {
-    setLoading(false)
   }
-}
 
   return (
     <div style={{
@@ -120,39 +108,11 @@ function Login({ onLogin }) {
             fontWeight: '600'
           }}
         >
-          {loading ? 'Verificando...' : 'Ingresar'}
+          {loading ? 'Obteniendo ubicación...' : 'Ingresar'}
         </button>
       </div>
     </div>
   )
 }
-<button
-  onClick={async () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        console.log("GPS FUNCIONA")
-        console.log(pos.coords)
-
-        alert(
-          `LAT: ${pos.coords.latitude}
-LNG: ${pos.coords.longitude}`
-        )
-      },
-      (err) => {
-        console.log("GPS ERROR")
-        console.log(err)
-
-        alert(JSON.stringify(err))
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 30000,
-        maximumAge: 60000
-      }
-    )
-  }}
->
-  Probar GPS
-</button>
 
 export default Login
