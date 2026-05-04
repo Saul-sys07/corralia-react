@@ -20,14 +20,6 @@ function Login({ onLogin }) {
     })
   }
 
-  const probarGPS = () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => alert(`LAT: ${pos.coords.latitude}\nLNG: ${pos.coords.longitude}`),
-      (err) => alert('ERROR GPS: ' + JSON.stringify(err)),
-      { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
-    )
-  }
-
   const handleLogin = async () => {
     if (!pin) return
     setLoading(true)
@@ -117,18 +109,6 @@ function Login({ onLogin }) {
           }}
         >
           {loading ? 'Obteniendo ubicación...' : 'Ingresar'}
-        </button>
-
-        <button
-          onClick={probarGPS}
-          style={{
-            marginTop: '10px', width: '100%', padding: '10px',
-            background: '#fafafa', border: '1px solid #ddd',
-            borderRadius: '8px', cursor: 'pointer',
-            fontSize: '13px', color: '#666'
-          }}
-        >
-          🧪 Probar GPS
         </button>
       </div>
     </div>
