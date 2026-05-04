@@ -21,37 +21,49 @@ function Login({ onLogin }) {
   }
 
   const handleLogin = async () => {
-    if (!pin) return
-    setLoading(true)
-    setError('')
+  if (!pin) return
+
+  setLoading(true)
+  setError('')
+
+  try {
+    let lat = null
+    let lng = null
+
     try {
-      let lat = null
-      let lng = null
-      try {
-        const ubicacion = await obtenerUbicacion()
-        lat = ubicacion.lat
-        lng = ubicacion.lng
-      } catch (e) {
-        if (e.code === 1) {
-          setError('Debes permitir la ubicación para acceder')
-          setLoading(false)
-          return
-        }
-      }
-      const res = await api.post('/login', { pin, lat, lng })
-      if (res.data.usuario.primer_acceso) {
-        onLogin(res.data.usuario, res.data.token)
-      } else {
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('usuario', JSON.stringify(res.data.usuario))
-        onLogin(res.data.usuario)
-      }
+      const ubicacion = await obtenerUbicacion()
+
+      console.log("UBICACION OBTENIDA:")
+      console.log(ubicacion)
+
+      lat = ubicacion.lat
+      lng = ubicacion.lng
+
     } catch (e) {
-      setError('PIN incorrecto')
-    } finally {
-      setLoading(false)
+      console.log("ERROR GPS:")
+      console.log(e)
+
+      setError("Error GPS: " + e.message)
     }
+
+    console.log("ENVIANDO:")
+    console.log({ pin, lat, lng })
+
+    const res = await api.post('/login', {
+      pin,
+      lat,
+      lng
+    })
+
+    console.log(res.data)
+
+  } catch (e) {
+    console.log(e)
+    setError('PIN incorrecto')
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div style={{
