@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import api from '../services/api'
 
-function Login({ onLogin }) {
+export default function Login({ onLogin }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -9,23 +9,18 @@ function Login({ onLogin }) {
   const obtenerUbicacion = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject({ code: 0, message: 'Geolocalización no soportada' })
+        reject(new Error('GPS no soportado'))
         return
       }
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          console.log('GPS OK:', pos.coords)
-
           resolve({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude
           })
         },
-        (err) => {
-          console.log('GPS ERROR:', err)
-          reject(err)
-        },
+        (err) => reject(err),
         {
           enableHighAccuracy: false,
           timeout: 30000,
@@ -48,27 +43,16 @@ function Login({ onLogin }) {
       try {
         const ubicacion = await obtenerUbicacion()
 
-        console.log('UBICACION OBTENIDA:', ubicacion)
+        console.log('GPS OK:', ubicacion)
 
         lat = ubicacion.lat
         lng = ubicacion.lng
-      } catch (e) {
-        console.log('ERROR OBTENIENDO GPS:', e)
-
-        if (e.code === 1) {
-          setError('Debes permitir la ubicación para acceder')
-          setLoading(false)
-          return
-        }
-
+      } catch (gpsError) {
+        console.log('GPS ERROR:', gpsError)
         setError('No se pudo obtener ubicación')
       }
 
-      console.log('ENVIANDO LOGIN:', {
-        pin,
-        lat,
-        lng
-      })
+      console.log('ENVIANDO:', { pin, lat, lng })
 
       const res = await api.post('/login', {
         pin,
@@ -76,17 +60,14 @@ function Login({ onLogin }) {
         lng
       })
 
-      console.log('RESPUESTA LOGIN:', res.data)
+      console.log(res.data)
 
-      if (res.data.usuario.primer_acceso) {
-        onLogin(res.data.usuario, res.data.token)
-      } else {
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('usuario', JSON.stringify(res.data.usuario))
-        onLogin(res.data.usuario)
-      }
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('usuario', JSON.stringify(res.data.usuario))
+
+      onLogin(res.data.usuario)
     } catch (e) {
-      console.log('ERROR LOGIN:', e)
+      console.log(e)
       setError('PIN incorrecto')
     } finally {
       setLoading(false)
@@ -96,16 +77,11 @@ function Login({ onLogin }) {
   const probarGPS = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        console.log('GPS FUNCIONA:', pos.coords)
-
         alert(
-          `LAT: ${pos.coords.latitude}
-LNG: ${pos.coords.longitude}`
+          `LAT: ${pos.coords.latitude}\nLNG: ${pos.coords.longitude}`
         )
       },
       (err) => {
-        console.log('GPS FALLÓ:', err)
-
         alert('ERROR GPS: ' + JSON.stringify(err))
       },
       {
@@ -133,24 +109,20 @@ LNG: ${pos.coords.longitude}`
           borderRadius: '12px',
           width: '320px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-          textAlign: 'center',
-          maxHeight: '90vh',
-          overflowY: 'auto'
+          textAlign: 'center'
         }}
       >
         <div style={{ fontSize: '48px', marginBottom: '8px' }}>
           🐖
         </div>
 
-        <h2 style={{ margin: '0 0 4px' }}>
-          Corralia v4
-        </h2>
+        <h2>Corralia v4</h2>
 
         <p
           style={{
             color: '#888',
-            margin: '0 0 24px',
-            fontSize: '14px'
+            fontSize: '14px',
+            marginBottom: '20px'
           }}
         >
           Rancho Yáñez — Atlacomulco
@@ -158,74 +130,51 @@ LNG: ${pos.coords.longitude}`
 
         <input
           type="password"
-          placeholder="PIN de acceso"
+          placeholder="PIN"
           value={pin}
-          onChange={(e) => {
-            const val = e.target.value
-              .replace(/\D/g, '')
-              .slice(0, 6)
-
-            setPin(val)
-          }}
-          onKeyDown={(e) =>
-            e.key === 'Enter' && handleLogin()
-          }
+          onChange={(e) => setPin(e.target.value)}
           style={{
             width: '100%',
             padding: '12px',
+            marginBottom: '12px',
             borderRadius: '8px',
             border: '1px solid #ddd',
-            fontSize: '16px',
-            marginBottom: '12px',
-            boxSizing: 'border-box',
-            textAlign: 'center',
-            letterSpacing: '4px'
+            boxSizing: 'border-box'
           }}
-          autoFocus
         />
 
         {error && (
-          <p
-            style={{
-              color: '#c62828',
-              fontSize: '14px',
-              margin: '0 0 12px'
-            }}
-          >
+          <p style={{ color: 'red', fontSize: '14px' }}>
             {error}
           </p>
         )}
 
         <button
           onClick={handleLogin}
-          disabled={loading || !pin}
+          disabled={loading}
           style={{
             width: '100%',
             padding: '12px',
-            backgroundColor: loading ? '#ccc' : '#2E7D32',
+            background: '#2E7D32',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
-            fontSize: '16px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight: '600'
+            cursor: 'pointer'
           }}
         >
-          {loading ? 'Obteniendo ubicación...' : 'Ingresar'}
+          {loading ? 'Cargando...' : 'Ingresar'}
         </button>
 
         <button
           onClick={probarGPS}
           style={{
-            marginTop: '10px',
             width: '100%',
             padding: '10px',
-            background: '#fafafa',
-            border: '1px solid #ddd',
+            marginTop: '10px',
             borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '13px',
-            color: '#666'
+            border: '1px solid #ddd',
+            background: '#fafafa',
+            cursor: 'pointer'
           }}
         >
           🧪 Probar GPS
@@ -234,5 +183,3 @@ LNG: ${pos.coords.longitude}`
     </div>
   )
 }
-
-export default Login
