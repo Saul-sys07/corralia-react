@@ -265,17 +265,19 @@ function HistorialAdmin() {
           {(a.foto_entrada || a.foto_salida) && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               {a.foto_entrada && (
-                <div style={{ flex: 1 }}>
+                <div>
                   <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Entrada</div>
                   <img src={a.foto_entrada} alt="entrada"
-                    style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', height: '100px' }} />
+                    style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', cursor: 'pointer' }}
+                    onClick={() => window.open(a.foto_entrada, '_blank')} />
                 </div>
               )}
               {a.foto_salida && (
-                <div style={{ flex: 1 }}>
+                <div>
                   <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Salida</div>
                   <img src={a.foto_salida} alt="salida"
-                    style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', height: '100px' }} />
+                    style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', cursor: 'pointer' }}
+                    onClick={() => window.open(a.foto_salida, '_blank')} />
                 </div>
               )}
             </div>
