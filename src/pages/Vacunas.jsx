@@ -1,24 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 
-const VACUNAS_POR_TIPO = {
+const VACUNAS_PARIDERAS = {
   'Crías': [
-    'E. coli y Clostridium (7-10 días)',
-    'Circovirus PCV2 y Mycoplasma (14-21 días)',
-    'Peste Porcina Clásica (45-60 días)',
-    'Castración (7-14 días)',
-  ],
-  'Destete': [
-    'Peste Porcina Clásica',
-    'Neumonía Actinobacillus',
-  ],
-  'Desarrollo': [
-    'Neumonía Actinobacillus',
-    'Peste Porcina Clásica',
-  ],
-  'Engorda': [
-    'Neumonía Actinobacillus',
-    'Peste Porcina Clásica',
+    'Hierro — 1ra dosis (día 3)',
+    'Hierro — 2da dosis (día 8)',
+    'Hierro — 3ra dosis (día 20)',
+    'Complejo B vitamina (al mes)',
+    'Complejo B vitamina — refuerzo',
+    'Vitamina + Parmisole (al destetar)',
+    'Emicina — diarrea',
+    'Castración (días 15-20)',
   ],
   'Pie de Cría': [
     'Parvovirus + Leptospirosis + Erisipela (dosis 1)',
@@ -30,6 +22,15 @@ const VACUNAS_POR_TIPO = {
     'Parvovirus + Leptospirosis + Erisipela (semestral)',
     'Peste Porcina Clásica (semestral)',
   ],
+}
+
+const VACUNAS_GENERAL = {
+  'Crías': ['Se inyectó'],
+  'Destete': ['Se inyectó'],
+  'Desarrollo': ['Se inyectó'],
+  'Engorda': ['Se inyectó'],
+  'Pie de Cría': ['Se inyectó'],
+  'Semental': ['Se inyectó'],
 }
 
 function Vacunas({ usuario, onVolver }) {
@@ -91,7 +92,9 @@ function RegistrarVacuna({ corrales, usuario, onExito }) {
   const [loading, setLoading] = useState(false)
 
   const tipos = corral?.tipo_animal?.split(' / ').map(t => t.trim()).filter(t => t !== 'VACIO') || []
-  const vacunasSugeridas = VACUNAS_POR_TIPO[tipoAnimal] || []
+  const esParideras = ['parideras', 'encargado_general'].includes(usuario.rol)
+const catalogo = esParideras ? VACUNAS_PARIDERAS : VACUNAS_GENERAL
+const vacunasSugeridas = catalogo[tipoAnimal] || ['Se inyectó']
 
   const confirmar = async () => {
     if (!corral || !tipoAnimal || !vacuna) return
