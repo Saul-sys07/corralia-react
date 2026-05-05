@@ -18,6 +18,8 @@ import PrimerAcceso from './pages/PrimerAcceso'
 import Movimientos from './pages/Movimientos'
 import api from './services/api'
 import MiReporte from './pages/MiReporte'
+import Monta from './pages/Monta'
+import VerificarPreñez from './pages/VerificarPreñez'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
@@ -152,7 +154,7 @@ function App() {
   }
 
   const mostrarBannerBeyin = usuario.rol === 'encargado_general' && yaCheco === false
-  const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta'].includes(pagina)
+  const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta', 'monta', 'verificar_preñez'].includes(pagina)
 
   const menuItems = [
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
@@ -186,6 +188,8 @@ function App() {
       {pagina === 'configuracion' && <Configuracion />}
       {pagina === 'movimientos' && <Movimientos />}
       {pagina === 'mi-reporte' && <MiReporte />}
+      {pagina === 'monta' && corralSeleccionado && <Monta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'verificar_preñez' && corralSeleccionado && <VerificarPreñez corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
     </>
   )
 
