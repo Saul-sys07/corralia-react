@@ -31,7 +31,8 @@ function TarjetaCorral({ row, onAccion }) {
   const tipos = row.tipo_animal?.split(' / ').map(t => t.trim()) || []
   const tieneVendibles = tipos.some(t => TIPOS_VENDIBLES.includes(t))
   const tienePieCria = row.tipo_animal?.includes('Pie de Cr')
-  const esZonaPavideras = row.zona === 'Parideras'
+  const esZonaParideras = row.zona === 'Parideras'
+  const esZonaGestacion = row.zona === 'Gestacion'
 
   return (
     <div style={{ marginBottom: '8px' }}>
@@ -102,9 +103,19 @@ function TarjetaCorral({ row, onAccion }) {
                   💰 Venta
                 </button>
               )}
-              {esZonaPavideras && tienePieCria && (
+              {esZonaParideras && tienePieCria && (
                 <button onClick={() => onAccion('parto', row)} style={btnAccion('#BF360C', '#FBE9E7')}>
                   🍼 Parto
+                </button>
+              )}
+              {esZonaGestacion && tienePieCria && row.estado_pie_cria === 'Disponible' && (
+                <button onClick={() => onAccion('monta', row)} style={btnAccion('#00695C', '#E0F2F1')}>
+                  🐷 Monta
+                </button>
+              )}
+              {esZonaGestacion && tienePieCria && row.estado_pie_cria === 'Montada' && (
+                <button onClick={() => onAccion('verificar_preñez', row)} style={btnAccion('#E65100', '#FFF3E0')}>
+                  🔍 Verificar preñez
                 </button>
               )}
             </div>
