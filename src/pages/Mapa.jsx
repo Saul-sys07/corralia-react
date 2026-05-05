@@ -108,12 +108,12 @@ function TarjetaCorral({ row, onAccion }) {
                   🍼 Parto
                 </button>
               )}
-              {esZonaGestacion && tienePieCria && row.estado_pie_cria === 'Disponible' && (
+              {esZonaGestacion && tienePieCria && row.estado_pie_cria?.includes('Disponible') && !row.estado_pie_cria?.includes('Montada') && (
                 <button onClick={() => onAccion('monta', row)} style={btnAccion('#00695C', '#E0F2F1')}>
                   🐷 Monta
                 </button>
               )}
-              {esZonaGestacion && tienePieCria && row.estado_pie_cria === 'Montada' && (
+              {esZonaGestacion && tienePieCria && row.estado_pie_cria?.includes('Montada') && (
                 <button onClick={() => onAccion('verificar_preñez', row)} style={btnAccion('#E65100', '#FFF3E0')}>
                   🔍 Verificar preñez
                 </button>
