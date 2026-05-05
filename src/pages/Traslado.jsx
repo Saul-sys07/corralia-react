@@ -142,17 +142,26 @@ function Traslado({ corral, usuario, onVolver }) {
           <p style={{ color: '#C62828' }}>No hay corrales disponibles</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {corralesDestino.map(c => (
-              <button key={c.id} onClick={() => setDestino(c)}
-                style={{
-                  padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
-                  border: destino?.id === c.id ? '2px solid #1976D2' : '2px solid #ddd',
-                  background: destino?.id === c.id ? '#e3f2fd' : 'white',
-                  textAlign: 'left', fontSize: '14px'
-                }}>
-                <strong>{c.nombre}</strong> — {c.zona} · {c.poblacion_actual}/{c.capacidad_max}
-              </button>
-            ))}
+            {corralesDestino.map(c => {
+              const pct = c.capacidad_max > 0 ? c.poblacion_actual / c.capacidad_max : 0
+              const semaforo = pct === 0 ? { bg: '#f1f8e9', border: '#81C784', texto: '#2E7D32' }
+                : pct < 0.5 ? { bg: '#f1f8e9', border: '#81C784', texto: '#2E7D32' }
+                  : pct < 0.85 ? { bg: '#fff8e1', border: '#FFD54F', texto: '#F57F17' }
+                    : { bg: '#ffebee', border: '#EF9A9A', texto: '#C62828' }
+              const seleccionado = destino?.id === c.id
+              return (
+                <button key={c.id} onClick={() => setDestino(c)}
+                  style={{
+                    padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                    border: seleccionado ? '2px solid #1976D2' : `2px solid ${semaforo.border}`,
+                    background: seleccionado ? '#e3f2fd' : semaforo.bg,
+                    textAlign: 'left', fontSize: '14px', width: '100%'
+                  }}>
+                  <strong style={{ color: seleccionado ? '#1976D2' : semaforo.texto }}>{c.nombre}</strong>
+                  <span style={{ color: '#666', fontSize: '13px' }}> — {c.zona} · {c.poblacion_actual}/{c.capacidad_max}</span>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
