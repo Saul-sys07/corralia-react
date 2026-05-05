@@ -92,7 +92,7 @@ function RegistrarVacuna({ corrales, usuario, onExito }) {
   const [loading, setLoading] = useState(false)
 
   const tipos = corral?.tipo_animal?.split(' / ').map(t => t.trim()).filter(t => t !== 'VACIO') || []
-  const esParideras = ['parideras', 'encargado_general'].includes(usuario.rol)
+  const esParideras = ['parideras', 'encargado_general', 'admin'].includes(usuario.rol)
 const catalogo = esParideras ? VACUNAS_PARIDERAS : VACUNAS_GENERAL
 const vacunasSugeridas = catalogo[tipoAnimal] || ['Se inyectó']
 
