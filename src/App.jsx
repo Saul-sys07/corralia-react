@@ -43,6 +43,7 @@ function App() {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [tokenTemporal, setTokenTemporal] = useState(null)
   const [yaCheco, setYaCheco] = useState(null)
+  const [notificaciones, setNotificaciones] = useState([])
   const ancho = useAncho()
   const esTablet = ancho >= 768
 
@@ -51,6 +52,12 @@ function App() {
   useEffect(() => {
     if (usuario && [...ROLES_CON_CHECADOR, 'encargado_general'].includes(usuario.rol)) {
       api.get('/checador/estado').then(r => setYaCheco(r.data.checo_entrada))
+    }
+  }, [usuario])
+
+  useEffect(() => {
+    if (usuario && ['admin', 'encargado_general', 'gestacion'].includes(usuario.rol)) {
+      api.get('/notificaciones').then(r => setNotificaciones(r.data))
     }
   }, [usuario])
 
@@ -70,6 +77,7 @@ function App() {
     setUsuario(null)
     setPagina('mapa')
     setYaCheco(null)
+    setNotificaciones([])
   }
 
   const handleAccion = (accion, corral) => {
@@ -86,6 +94,32 @@ function App() {
     setPagina(pag)
     setMenuAbierto(false)
   }
+
+  const cerrarNotificacion = (id) => {
+    api.post(`/notificaciones/${id}/vista`)
+    setNotificaciones(prev => prev.filter(x => x.id !== id))
+  }
+
+  const BannerNotificaciones = () => (
+    notificaciones.length > 0 ? (
+      <div style={{ padding: '8px 16px' }}>
+        {notificaciones.map(n => (
+          <div key={n.id} style={{
+            background: n.tipo === 'alerta_parto' ? '#ffebee' : '#fff8e1',
+            border: `1px solid ${n.tipo === 'alerta_parto' ? '#EF9A9A' : '#FFD54F'}`,
+            borderRadius: '8px', padding: '10px 14px', marginBottom: '6px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <span style={{ fontSize: '14px', color: '#333' }}>{n.mensaje}</span>
+            <button onClick={() => cerrarNotificacion(n.id)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '18px', color: '#888', marginLeft: '8px'
+            }}>✕</button>
+          </div>
+        ))}
+      </div>
+    ) : null
+  )
 
   if (!usuario) return <Login onLogin={handleLogin} />
 
@@ -159,14 +193,12 @@ function App() {
   if (esTablet) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui' }}>
-        {/* Sidebar */}
         <div style={{
           width: '220px', minWidth: '220px', background: '#1B5E20',
           display: 'flex', flexDirection: 'column',
           position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
           overflowY: 'auto'
         }}>
-          {/* Logo */}
           <div style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <div style={{ fontWeight: '800', fontSize: '20px', color: 'white' }}>🐖 Corralia</div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
@@ -174,7 +206,6 @@ function App() {
             </div>
           </div>
 
-          {/* Nav items */}
           <nav style={{ flex: 1, padding: '8px' }}>
             {menuItems.map(([pag, label]) => (
               <button key={pag} onClick={() => irA(pag)} style={{
@@ -188,7 +219,6 @@ function App() {
             ))}
           </nav>
 
-          {/* Banner Beyin */}
           {mostrarBannerBeyin && (
             <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ fontSize: '12px', color: '#FFD54F', marginBottom: '6px' }}>
@@ -202,7 +232,6 @@ function App() {
             </div>
           )}
 
-          {/* Salir */}
           <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <button onClick={handleLogout} style={{
               width: '100%', background: 'rgba(255,255,255,0.1)', border: 'none',
@@ -212,8 +241,8 @@ function App() {
           </div>
         </div>
 
-        {/* Contenido principal */}
         <div style={{ marginLeft: '220px', flex: 1, minHeight: '100vh', background: '#fafafa' }}>
+          <BannerNotificaciones />
           <Contenido />
         </div>
       </div>
@@ -283,6 +312,7 @@ function App() {
         </div>
       )}
 
+      <BannerNotificaciones />
       <Contenido />
     </div>
   )
