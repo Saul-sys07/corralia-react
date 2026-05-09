@@ -27,24 +27,26 @@ function CheckerTrabajador({ usuario, onChecado }) {
   useEffect(() => { cargarEstado() }, [])
 
   const abrirCamara = async (accion) => {
-    if (procesando || loading) return
-    setProcesando(true)
-    setAccionPendiente(accion)
+  if (procesando || loading) return
+  setProcesando(true)
+  setAccionPendiente(accion)
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' }
+    })
+    streamRef.current = stream
     setMostrarCamara(true)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' }
-      })
-      streamRef.current = stream
+    // Esperar a que React renderice el video
+    setTimeout(() => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
-    } catch (e) {
-      setMostrarCamara(false)
-      setProcesando(false)
-      await registrar(accion, null)
-    }
+    }, 100)
+  } catch (e) {
+    setProcesando(false)
+    await registrar(accion, null)
   }
+}
 
   const tomarFoto = async () => {
     const canvas = document.createElement('canvas')
