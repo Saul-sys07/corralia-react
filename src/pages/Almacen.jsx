@@ -319,7 +319,8 @@ function FotoTicket({ onFotoSubida }) {
             ✅ Ticket adjunto
           </div>
           <img src={fotoUrl} alt="ticket"
-            style={{ width: '100%', borderRadius: '8px', maxHeight: '150px', objectFit: 'cover' }} />
+            style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(fotoUrl, '_blank')} />
           <button onClick={() => { setFotoUrl(null); onFotoSubida(null) }}
             style={{ marginTop: '4px', background: 'none', border: 'none', color: '#C62828', cursor: 'pointer', fontSize: '13px' }}>
             🗑️ Quitar foto
@@ -366,7 +367,8 @@ function Tickets() {
             {t.usuario_id} — {t.fecha ? new Date(t.fecha).toLocaleString('es-MX') : '?'}
           </div>
           <img src={t.url} alt="ticket"
-            style={{ width: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+            style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(t.url, '_blank')} />
         </div>
       ))}
     </div>
