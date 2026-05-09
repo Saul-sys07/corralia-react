@@ -25,7 +25,8 @@ function Venta({ corral, usuario, onVolver }) {
 
   const esDestete = tipoAnimal === 'Destete'
   const esAdmin = usuario.rol === 'admin'
-  const comisionKg = COMISIONES[cliente?.tipo] || 0
+  const sinComision = ['Destete', 'Desecho'].includes(tipoAnimal)
+const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
   const disponible = corral.poblacion_actual || 0
 
   useEffect(() => {
@@ -150,13 +151,13 @@ function Venta({ corral, usuario, onVolver }) {
     ))}
   </select>
   {cliente && (
-    <div style={{
-      marginTop: '6px', padding: '8px 12px',
-      background: '#f1f8e9', borderRadius: '8px', fontSize: '13px', color: '#2E7D32'
-    }}>
-      ✅ {cliente.nombre} · Comisión: ${COMISIONES[cliente.tipo]}/kg
-    </div>
-  )}
+  <div style={{
+    marginTop: '6px', padding: '8px 12px',
+    background: '#f1f8e9', borderRadius: '8px', fontSize: '13px', color: '#2E7D32'
+  }}>
+    ✅ {cliente.nombre} · {sinComision ? 'Sin comisión' : `Comisión: $${COMISIONES[cliente.tipo]}/kg`}
+  </div>
+)}
 </div>
 
       {/* Precio kg — solo admin puede cambiar */}
