@@ -15,6 +15,16 @@ function getSemaforo(row) {
   const pct = pob / cap
   const esExclusivo = row.tipo_animal?.includes('Semental') || row.tipo_animal?.includes('Pie de Cr')
 
+  // Semáforo reproductivo para Gestación con Pie de Cría
+  if (row.zona === 'Gestacion' && row.tipo_animal?.includes('Pie de Cr') && row.estado_pie_cria) {
+    const estado = row.estado_pie_cria
+    if (estado.includes('Disponible')) return { color: '#2E7D32', fondo: '#f1f8e9', emoji: '🟢', estado: 'DISPONIBLE' }
+    if (estado.includes('Montada')) return { color: '#F57F17', fondo: '#fff8e1', emoji: '🟡', estado: 'MONTADA' }
+    if (estado.includes('Gestante')) return { color: '#1565C0', fondo: '#e3f2fd', emoji: '🔵', estado: 'GESTANTE' }
+    if (estado.includes('Por Parir')) return { color: '#E65100', fondo: '#fff3e0', emoji: '🟠', estado: 'POR PARIR' }
+    if (estado.includes('Parida')) return { color: '#9E9E9E', fondo: '#f5f5f5', emoji: '⚫', estado: 'PARIDA' }
+  }
+
   if (pob === 0) return { color: '#9E9E9E', fondo: '#f5f5f5', emoji: '⚫', estado: 'VACÍO' }
   if (esExclusivo && pob <= cap) return { color: '#2E7D32', fondo: '#f1f8e9', emoji: '🟢', estado: 'OCUPADO' }
   if (pct >= 1.0) return { color: '#C62828', fondo: '#ffebee', emoji: '🔴', estado: 'EXCEDIDO' }
