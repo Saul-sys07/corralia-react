@@ -26,8 +26,12 @@ function Venta({ corral, usuario, onVolver }) {
   const esDestete = tipoAnimal === 'Destete'
   const esAdmin = usuario.rol === 'admin'
   const sinComision = ['Destete', 'Desecho'].includes(tipoAnimal)
-const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
+  const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
   const disponible = corral.poblacion_actual || 0
+  const [mostrarApartado, setMostrarApartado] = useState(false)
+  const [anticipo, setAnticipo] = useState('')
+  const [fechaCompromiso, setFechaCompromiso] = useState('')
+  const [notasApartado, setNotasApartado] = useState('')
 
   useEffect(() => {
     api.get('/clientes').then(r => setClientes(r.data))
@@ -76,6 +80,27 @@ const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
   const quitarDelCarrito = (idx) => {
     setCarrito(carrito.filter((_, i) => i !== idx))
   }
+
+  const handleApartar = async () => {
+  if (!cliente || carrito.length === 0 || !anticipo || !fechaCompromiso) return
+  setLoading(true)
+  setError('')
+  try {
+    await api.post('/apartados', {
+      cliente_id: cliente.id,
+      id_chiquero: corral.id,
+      tipo_animal: tipoAnimal,
+      cantidad: carrito.length,
+      anticipo: Number(anticipo),
+      fecha_compromiso: fechaCompromiso,
+      notas: notasApartado
+    })
+    onVolver(true)
+  } catch (e) {
+    setError('Error al registrar apartado')
+    setLoading(false)
+  }
+}
 
   const handleConfirmar = async () => {
     if (!cliente || carrito.length === 0) return
@@ -262,16 +287,73 @@ const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
 
       {error && <p style={{ color: '#C62828', marginBottom: '12px' }}>{error}</p>}
 
-      <button onClick={handleConfirmar}
-        disabled={loading || !cliente || carrito.length === 0}
+      {/* Apartado */}
+{!mostrarApartado ? (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <button onClick={handleConfirmar}
+      disabled={loading || !cliente || carrito.length === 0}
+      style={{
+        width: '100%', padding: '14px',
+        background: loading || !cliente || carrito.length === 0 ? '#ccc' : '#2E7D32',
+        color: 'white', border: 'none', borderRadius: '10px',
+        fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+      }}>
+      {loading ? 'Registrando...' : `💰 Vender ${carrito.length} cerdos — $${totalRancho.toFixed(2)}`}
+    </button>
+    <button onClick={() => setMostrarApartado(true)}
+      disabled={!cliente || carrito.length === 0}
+      style={{
+        width: '100%', padding: '14px',
+        background: !cliente || carrito.length === 0 ? '#ccc' : '#E65100',
+        color: 'white', border: 'none', borderRadius: '10px',
+        fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+      }}>
+      📋 Apartar {carrito.length} cerdos
+    </button>
+  </div>
+) : (
+  <div style={{ background: '#fff3e0', border: '1px solid #FFB74D', borderRadius: '10px', padding: '16px' }}>
+    <h3 style={{ margin: '0 0 12px', color: '#E65100' }}>📋 Registrar Apartado</h3>
+    <div style={{ marginBottom: '12px' }}>
+      <label style={labelStyle}>Anticipo recibido ($):</label>
+      <input type="number" min={0} value={anticipo}
+        onChange={e => setAnticipo(e.target.value)}
+        style={inputStyle} />
+    </div>
+    <div style={{ marginBottom: '12px' }}>
+      <label style={labelStyle}>Fecha de compromiso:</label>
+      <input type="date" value={fechaCompromiso}
+        onChange={e => setFechaCompromiso(e.target.value)}
+        style={inputStyle} />
+    </div>
+    <div style={{ marginBottom: '16px' }}>
+      <label style={labelStyle}>Notas (opcional):</label>
+      <input type="text" value={notasApartado}
+        onChange={e => setNotasApartado(e.target.value)}
+        placeholder="Ej: viene el sábado a las 10am"
+        style={inputStyle} />
+    </div>
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <button onClick={handleApartar} disabled={loading || !anticipo || !fechaCompromiso}
         style={{
-          width: '100%', padding: '14px',
-          background: loading || !cliente || carrito.length === 0 ? '#ccc' : '#2E7D32',
+          flex: 1, padding: '14px',
+          background: loading || !anticipo || !fechaCompromiso ? '#ccc' : '#E65100',
           color: 'white', border: 'none', borderRadius: '10px',
-          fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+          fontSize: '15px', fontWeight: '700', cursor: 'pointer'
         }}>
-        {loading ? 'Registrando...' : `Confirmar venta de ${carrito.length} cerdos — $${totalRancho.toFixed(2)}`}
+        {loading ? 'Registrando...' : '📋 Confirmar apartado'}
       </button>
+      <button onClick={() => setMostrarApartado(false)}
+        style={{
+          flex: 1, padding: '14px', background: '#f0f0f0',
+          color: '#555', border: 'none', borderRadius: '10px',
+          fontSize: '15px', cursor: 'pointer'
+        }}>
+        Cancelar
+      </button>
+    </div>
+  </div>
+)}
     </div>
   )
 }
