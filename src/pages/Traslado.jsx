@@ -36,7 +36,7 @@ function Traslado({ corral, usuario, onVolver }) {
   // Candados por zona
   const ZONA_DESTINO = {
   gestacion: null,
-  parideras: tipoDestino === 'Pie de Cría' ? 'Gestacion' : tipoDestino === 'Crías' ? 'Crecimiento' : null,
+  parideras: null,
   crecimiento: !['Pie de Cría', 'Semental'].includes(tipoDestino) ? 'Crecimiento' : 'Gestacion',
 }
   const zonaFiltro = ZONA_DESTINO[usuario.rol] || null
