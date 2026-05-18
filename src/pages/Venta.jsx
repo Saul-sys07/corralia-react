@@ -5,7 +5,8 @@ const COMISIONES = {
   'Nuevo': 3.00,
   'Retenido': 1.50,
   'Recuperado': 2.00,
-  'Sin comision': 0.00
+  'Sin comision': 0.00,
+  'Disponible': 0.00
 }
 
 function Venta({ corral, usuario, onVolver }) {
