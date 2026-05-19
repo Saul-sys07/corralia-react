@@ -7,7 +7,6 @@ import Etapa from './pages/Etapa'
 import Parto from './pages/Parto'
 import Venta from './pages/Venta'
 import Almacen from './pages/Almacen'
-import Finanzas from './pages/Finanzas'
 import Checador from './pages/Checador'
 import Vacunas from './pages/Vacunas'
 import Reportes from './pages/Reportes'
@@ -23,6 +22,7 @@ import VerificarPreñez from './pages/VerificarPreñez'
 import Apartados from './pages/Apartados'
 import Semana from './pages/Semana'
 import Nomina from './pages/Nomina'
+import Depositos from './pages/Depositos'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
@@ -162,7 +162,7 @@ function App() {
   const menuItems = [
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
-    ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
+    ...(usuario.rol === 'admin' ? [['depositos', '💰 Depósitos']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['semana', '📅 Semana']] : []),
     ['checador', '⏰ Checador'],
@@ -186,7 +186,7 @@ function App() {
       {pagina === 'etapa' && corralSeleccionado && <Etapa corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'parto' && corralSeleccionado && <Parto corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'venta' && corralSeleccionado && <Venta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
-      {pagina === 'finanzas' && <Finanzas usuario={usuario} />}
+      {pagina === 'depositos' && <Depositos usuario={usuario} />}
       {pagina === 'checador' && <Checador usuario={usuario} onChecado={() => setYaCheco(true)} />}
       {pagina === 'vacunas' && <Vacunas usuario={usuario} onVolver={['parideras', 'crecimiento', 'gestacion'].includes(usuario.rol) ? () => irA('mapa') : null} />}
       {pagina === 'reportes' && <Reportes />}
