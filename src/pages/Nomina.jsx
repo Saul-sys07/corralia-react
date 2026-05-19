@@ -98,12 +98,6 @@ function Nomina({ usuario }) {
         <span style={{ color: '#C62828' }}>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
       </div>
 
-      {usuario.rol === 'admin' && (
-        <div style={{ marginBottom: '20px' }}>
-          <ConfigSueldos />
-        </div>
-      )}
-
       <button onClick={confirmar} disabled={loading}
         style={{
           width: '100%', padding: '14px',
