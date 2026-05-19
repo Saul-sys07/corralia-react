@@ -75,8 +75,8 @@ function Nomina({ usuario }) {
           </div>
           {usuario.rol === 'admin' ? (
             <input type="number" min={0} value={montos[t.id] || 0}
-              onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
-              style={inputStyle} />
+             onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
+             style={inputStyle} />
           ) : (
             <div style={{
               padding: '10px', background: '#f0f0f0',
