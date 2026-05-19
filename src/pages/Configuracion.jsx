@@ -46,6 +46,7 @@ function Configuracion() {
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', flexWrap: 'wrap' }}>
         {[
           ['precio', '💲 Precio'],
+          ['sueldos', '💰 Sueldos'],
           ['nuclear', '☢️ Reset'],
           ['piecria', '🐷 Pie de Cría'],
           ['animales', '📦 Animales'],
@@ -69,7 +70,7 @@ function Configuracion() {
           color: '#2E7D32', fontWeight: '600'
         }}>{mensaje}</div>
       )}
-        {tab === 'nuclear' && <NuclearTab />}
+      {tab === 'nuclear' && <NuclearTab />}
       {tab === 'precio' && (
         <div>
           <p style={{ color: '#666', marginBottom: '16px', fontSize: '14px' }}>
@@ -90,6 +91,7 @@ function Configuracion() {
           </button>
         </div>
       )}
+      {tab === 'sueldos' && <ConfigSueldos setMensaje={setMensaje} />}
 
       {tab === 'piecria' && (
         <PieCriaTab pieCria={pieCria} onRefresh={cargar} setMensaje={setMensaje} />
@@ -100,21 +102,21 @@ function Configuracion() {
       )}
 
       {tab === 'corrales' && (
-  <div>
-    <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>
-      {corrales.length} corrales registrados
-    </p>
-    {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
-      <div key={zona} style={{ marginBottom: '16px' }}>
-        <h4 style={{ margin: '0 0 8px', color: '#444' }}>{zona}</h4>
-        {corrales.filter(c => c.zona === zona).map((c, i) => (
-          <CorralItem key={i} corral={c} onRefresh={cargar} setMensaje={setMensaje} />
-        ))}
-      </div>
-    ))}
-    <CrearCorral onRefresh={cargar} setMensaje={setMensaje} />
-  </div>
-)}
+        <div>
+          <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>
+            {corrales.length} corrales registrados
+          </p>
+          {['Parideras', 'Gestacion', 'Crecimiento'].map(zona => (
+            <div key={zona} style={{ marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 8px', color: '#444' }}>{zona}</h4>
+              {corrales.filter(c => c.zona === zona).map((c, i) => (
+                <CorralItem key={i} corral={c} onRefresh={cargar} setMensaje={setMensaje} />
+              ))}
+            </div>
+          ))}
+          <CrearCorral onRefresh={cargar} setMensaje={setMensaje} />
+        </div>
+      )}
 
       {tab === 'usuarios' && (
         <UsuariosTab usuarios={usuarios} onRefresh={cargar} setMensaje={setMensaje} />
@@ -212,7 +214,7 @@ function PieCriaTab({ pieCria, onRefresh, setMensaje }) {
 
 function RegistrarAnimales({ corrales, mapa, onRefresh, setMensaje }) {
   const TIPOS = ['Semental', 'Pie de Cría', 'Crías', 'Destete',
-                 'Desarrollo', 'Engorda', 'Herniados', 'Desecho']
+    'Desarrollo', 'Engorda', 'Herniados', 'Desecho']
   const ZONAS = ['Parideras', 'Gestacion', 'Crecimiento']
 
   const [zona, setZona] = useState('Parideras')
@@ -736,7 +738,7 @@ function NuclearTab() {
       }}>
         <h4 style={{ margin: '0 0 8px', color: '#C62828' }}>☢️ Zona de peligro</h4>
         <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>
-          Esto borra <strong>todos los datos operativos</strong> — animales, historial, ventas, 
+          Esto borra <strong>todos los datos operativos</strong> — animales, historial, ventas,
           finanzas, almacén, clientes y asistencias. Solo conserva los corrales y usuarios.
         </p>
         <p style={{ margin: '8px 0 0', fontSize: '14px', color: '#C62828', fontWeight: '600' }}>
@@ -777,7 +779,54 @@ function NuclearTab() {
         </div>
       )}
     </div>
-    
+
+  )
+}
+function ConfigSueldos({ setMensaje }) {
+  const [trabajadores, setTrabajadores] = useState([])
+  const [sueldos, setSueldos] = useState({})
+
+  useEffect(() => {
+    api.get('/finanzas/sueldos').then(r => {
+      setTrabajadores(r.data)
+      const init = {}
+      r.data.forEach(t => { init[t.id] = parseFloat(t.sueldo_diario) })
+      setSueldos(init)
+    })
+  }, [])
+
+  const guardar = async (id) => {
+    await api.post('/finanzas/sueldos', { usuario_id: id, sueldo_diario: sueldos[id] })
+    setMensaje('✅ Sueldo actualizado')
+    setTimeout(() => setMensaje(''), 3000)
+  }
+
+  return (
+    <div>
+      <p style={{ color: '#666', fontSize: '14px', margin: '0 0 16px' }}>
+        Sueldos diarios por trabajador
+      </p>
+      {trabajadores.map(t => (
+        <div key={t.id} style={{
+          padding: '10px 12px', background: '#f9f9f9',
+          borderRadius: '8px', marginBottom: '8px'
+        }}>
+          <div style={{ marginBottom: '6px' }}>
+            <strong>{t.nombre}</strong>
+            <span style={{ color: '#888', fontSize: '12px' }}> — {t.rol}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="number" min={0} value={sueldos[t.id] || 0}
+              onChange={e => setSueldos({ ...sueldos, [t.id]: Number(e.target.value) })}
+              style={{ ...inputStyle, marginBottom: 0 }} />
+            <button onClick={() => guardar(t.id)} style={{
+              padding: '10px 16px', background: '#2E7D32', color: 'white',
+              border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700'
+            }}>💾</button>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 export default Configuracion

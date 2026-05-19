@@ -73,9 +73,18 @@ function Nomina({ usuario }) {
               {t.dias_trabajados} días × ${parseFloat(t.sueldo_diario).toFixed(2)}/día
             </span>
           </div>
-          <input type="number" min={0} value={montos[t.id] || 0}
-            onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
-            style={inputStyle} />
+          {usuario.rol === 'admin' ? (
+            <input type="number" min={0} value={montos[t.id] || 0}
+              onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
+              style={inputStyle} />
+          ) : (
+            <div style={{
+              padding: '10px', background: '#f0f0f0',
+              borderRadius: '8px', fontWeight: '700', fontSize: '15px'
+            }}>
+              ${Number(montos[t.id] || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </div>
+          )}
         </div>
       ))}
 
@@ -104,55 +113,6 @@ function Nomina({ usuario }) {
         }}>
         {loading ? 'Registrando...' : `✅ Confirmar nómina — $${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
       </button>
-    </div>
-  )
-}
-
-function ConfigSueldos() {
-  const [trabajadores, setTrabajadores] = useState([])
-  const [sueldos, setSueldos] = useState({})
-  const [guardado, setGuardado] = useState(null)
-
-  useEffect(() => {
-    api.get('/finanzas/sueldos').then(r => {
-      setTrabajadores(r.data)
-      const init = {}
-      r.data.forEach(t => { init[t.id] = parseFloat(t.sueldo_diario) })
-      setSueldos(init)
-    })
-  }, [])
-
-  const guardar = async (id) => {
-    await api.post('/finanzas/sueldos', { usuario_id: id, sueldo_diario: sueldos[id] })
-    setGuardado(id)
-    setTimeout(() => setGuardado(null), 2000)
-  }
-
-  return (
-    <div>
-      <h3 style={{ margin: '0 0 12px', color: '#444', fontSize: '15px' }}>⚙️ Sueldos diarios</h3>
-      {trabajadores.map(t => (
-        <div key={t.id} style={{
-          padding: '10px 12px', background: '#f5f5f5',
-          borderRadius: '8px', marginBottom: '6px'
-        }}>
-          <div style={{ marginBottom: '6px' }}>
-            <strong>{t.nombre}</strong>
-            <span style={{ color: '#888', fontSize: '12px' }}> — {t.rol}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="number" min={0} value={sueldos[t.id] || 0}
-              onChange={e => setSueldos({ ...sueldos, [t.id]: Number(e.target.value) })}
-              style={{ ...inputStyle, marginBottom: 0 }} />
-            <button onClick={() => guardar(t.id)} style={{
-              padding: '10px 16px',
-              background: guardado === t.id ? '#2E7D32' : '#555',
-              color: 'white', border: 'none', borderRadius: '8px',
-              cursor: 'pointer', fontWeight: '700'
-            }}>{guardado === t.id ? '✅' : '💾'}</button>
-          </div>
-        </div>
-      ))}
     </div>
   )
 }
