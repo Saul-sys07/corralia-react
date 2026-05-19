@@ -152,4 +152,6 @@ function Depositos({ onExito }) {
     </div>
   )
 }
+const labelStyle = { display: 'block', fontWeight: '600', marginBottom: '6px', color: '#444' }
+const inputStyle = { width: '100%', padding: '10px', fontSize: '15px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }
 export default Finanzas
