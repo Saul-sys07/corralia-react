@@ -57,7 +57,7 @@ function Almacen({ usuario }) {
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
-        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento'], ['gastos', '📋 Gastos'], ['historial', '📅 Semana']].map(([key, label]) => (
+        {[['inventario', '📦 Inventario'], ['compra', '🛒 Compra'], ['revoltura', '🔄 Revoltura'], ['tickets', '🧾 Tickets'], ['alimento', '🐷 Alimento'], ['historial', '📅 Semana']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '8px', border: 'none', borderRadius: '8px',
             background: tab === key ? '#2E7D32' : '#f0f0f0',
@@ -73,7 +73,6 @@ function Almacen({ usuario }) {
       {tab === 'revoltura' && <Revoltura inventario={inventario} onExito={cargarDatos} />}
       {tab === 'tickets' && <Tickets />}
       {tab === 'alimento' && <Alimento onExito={cargarDatos} />}
-      {tab === 'gastos' && <Gastos />}
       {tab === 'historial' && <HistorialAlimento />}
     </div>
   )

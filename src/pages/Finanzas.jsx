@@ -21,8 +21,6 @@ function Finanzas({ usuario }) {
         {[
           ['resumen', '📊 Resumen'],
           ['depositos', '💰 Depósitos'],
-          ['nomina', '👷 Nómina'],
-          ['sueldos', '⚙️ Sueldos'],
         ].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
             flex: 1, padding: '10px 6px', border: 'none', borderRadius: '8px',
@@ -36,8 +34,6 @@ function Finanzas({ usuario }) {
 
       {tab === 'resumen' && <Resumen resumen={resumen} />}
       {tab === 'depositos' && <Depositos onExito={cargarResumen} />}
-      {tab === 'nomina' && <Nomina onExito={cargarResumen} />}
-      {tab === 'sueldos' && <ConfigSueldos />}
     </div>
   )
 }
@@ -156,140 +152,3 @@ function Depositos({ onExito }) {
     </div>
   )
 }
-
-function Nomina({ onExito }) {
-  const [trabajadores, setTrabajadores] = useState([])
-  const [montos, setMontos] = useState({})
-  const [loading, setLoading] = useState(false)
-
-  const hoy = new Date()
-  const lunes = new Date(hoy)
-  lunes.setDate(hoy.getDate() - hoy.getDay() + 1)
-  const semanaStr = lunes.toLocaleDateString('es-MX')
-
-  useEffect(() => {
-    api.get('/finanzas/nomina').then(r => {
-      setTrabajadores(r.data)
-      const init = {}
-      r.data.forEach(t => {
-        init[t.id] = (parseFloat(t.sueldo_diario) * parseInt(t.dias_trabajados)).toFixed(2)
-      })
-      setMontos(init)
-    })
-  }, [])
-
-  const total = Object.values(montos).reduce((s, v) => s + Number(v), 0)
-
-  const confirmar = async () => {
-    setLoading(true)
-    try {
-      await api.post('/finanzas/nomina', {
-        items: trabajadores.map(t => ({
-          nombre: t.nombre,
-          monto: Number(montos[t.id] || 0),
-          dias: t.dias_trabajados
-        })),
-        semana: semanaStr
-      })
-      onExito()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div>
-      <p style={{ color: '#888', fontSize: '13px', margin: '0 0 16px' }}>
-        Semana: {semanaStr} — basado en asistencias del checador
-      </p>
-
-      {trabajadores.map(t => (
-        <div key={t.id} style={{
-          padding: '10px 12px', background: '#f9f9f9',
-          borderRadius: '8px', marginBottom: '8px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <strong>{t.nombre}</strong>
-            <span style={{ color: '#888', fontSize: '13px' }}>
-              {t.dias_trabajados} días × ${parseFloat(t.sueldo_diario).toFixed(2)}/día
-            </span>
-          </div>
-          <input type="number" min={0} value={montos[t.id] || 0}
-            onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
-            style={inputStyle} />
-        </div>
-      ))}
-
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        fontWeight: '700', fontSize: '18px',
-        padding: '12px', marginBottom: '12px'
-      }}>
-        <span>Total nómina:</span>
-        <span style={{ color: '#C62828' }}>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-      </div>
-
-      <button onClick={confirmar} disabled={loading}
-        style={{
-          width: '100%', padding: '14px',
-          background: loading ? '#ccc' : '#C62828',
-          color: 'white', border: 'none', borderRadius: '10px',
-          fontSize: '16px', fontWeight: '700', cursor: 'pointer'
-        }}>
-        {loading ? 'Registrando...' : `Confirmar nómina — $${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-      </button>
-    </div>
-  )
-}
-
-function ConfigSueldos() {
-  const [trabajadores, setTrabajadores] = useState([])
-  const [sueldos, setSueldos] = useState({})
-
-  useEffect(() => {
-    api.get('/finanzas/sueldos').then(r => {
-      setTrabajadores(r.data)
-      const init = {}
-      r.data.forEach(t => { init[t.id] = parseFloat(t.sueldo_diario) })
-      setSueldos(init)
-    })
-  }, [])
-
-  const guardar = async (id) => {
-    await api.post('/finanzas/sueldos', { usuario_id: id, sueldo_diario: sueldos[id] })
-    alert('Sueldo actualizado')
-  }
-
-  return (
-    <div>
-      <p style={{ color: '#888', fontSize: '13px', margin: '0 0 16px' }}>
-        Solo visible para el administrador
-      </p>
-      {trabajadores.map(t => (
-        <div key={t.id} style={{
-          padding: '10px 12px', background: '#f9f9f9',
-          borderRadius: '8px', marginBottom: '8px'
-        }}>
-          <div style={{ marginBottom: '6px' }}>
-            <strong>{t.nombre}</strong>
-            <span style={{ color: '#888', fontSize: '13px' }}> — {t.rol}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="number" min={0} value={sueldos[t.id] || 0}
-              onChange={e => setSueldos({ ...sueldos, [t.id]: Number(e.target.value) })}
-              style={{ ...inputStyle, marginBottom: 0 }} />
-            <button onClick={() => guardar(t.id)} style={{
-              padding: '10px 16px', background: '#2E7D32', color: 'white',
-              border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700'
-            }}>💾</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const labelStyle = { display: 'block', fontWeight: '600', marginBottom: '6px', color: '#444' }
-const inputStyle = { width: '100%', padding: '10px', fontSize: '15px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }
-
-export default Finanzas

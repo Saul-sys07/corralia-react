@@ -159,6 +159,7 @@ function App() {
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta', 'monta', 'verificar_preñez'].includes(pagina)
 
   const menuItems = [
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
     ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
