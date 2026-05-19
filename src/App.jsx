@@ -21,6 +21,7 @@ import MiReporte from './pages/MiReporte'
 import Monta from './pages/Monta'
 import VerificarPreñez from './pages/VerificarPreñez'
 import Apartados from './pages/Apartados'
+import Semana from './pages/Semana'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
@@ -170,6 +171,7 @@ function App() {
     ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
     ...(usuario.rol === 'encargado_general' ? [['mi-reporte', '📊 Mi Reporte']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['apartados', '📋 Apartados']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['semana', '📅 Semana']] : []),
   ]
     
 
@@ -194,6 +196,7 @@ function App() {
       {pagina === 'monta' && corralSeleccionado && <Monta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'verificar_preñez' && corralSeleccionado && <VerificarPreñez corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'apartados' && <Apartados usuario={usuario} />}
+      {pagina === 'semana' && <Semana usuario={usuario} />}
     </>
   )
 
