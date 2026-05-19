@@ -20,6 +20,7 @@ import api from './services/api'
 import MiReporte from './pages/MiReporte'
 import Monta from './pages/Monta'
 import VerificarPreñez from './pages/VerificarPreñez'
+import Apartados from './pages/Apartados'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
@@ -168,7 +169,9 @@ function App() {
     ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
     ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
     ...(usuario.rol === 'encargado_general' ? [['mi-reporte', '📊 Mi Reporte']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['apartados', '📋 Apartados']] : []),
   ]
+    
 
   const Contenido = () => (
     <>
@@ -190,6 +193,7 @@ function App() {
       {pagina === 'mi-reporte' && <MiReporte />}
       {pagina === 'monta' && corralSeleccionado && <Monta corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
       {pagina === 'verificar_preñez' && corralSeleccionado && <VerificarPreñez corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}
+      {pagina === 'apartados' && <Apartados usuario={usuario} />}
     </>
   )
 
