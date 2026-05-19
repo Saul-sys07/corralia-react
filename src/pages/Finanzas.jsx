@@ -152,3 +152,4 @@ function Depositos({ onExito }) {
     </div>
   )
 }
+export default Finanzas
