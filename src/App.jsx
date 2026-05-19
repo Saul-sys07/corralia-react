@@ -173,7 +173,6 @@ function App() {
     ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['apartados', '📋 Apartados']] : []),
     ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
-    ...(usuario.rol === 'encargado_general' ? [['mi-reporte', '📊 Mi Reporte']] : []),
   ]
     
 
