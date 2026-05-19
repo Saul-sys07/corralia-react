@@ -160,21 +160,20 @@ function App() {
   const esAccion = ['muerte', 'traspaso', 'etapa', 'parto', 'venta', 'monta', 'verificar_preñez'].includes(pagina)
 
   const menuItems = [
-    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
-    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
     ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['semana', '📅 Semana']] : []),
     ['checador', '⏰ Checador'],
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['vacunas', '💉 Vacunas']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['movimientos', '📜 Movimientos']] : []),
     ...(usuario.rol === 'admin' ? [['reportes', '📊 Reportes']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['clientes', '👤 Clientes']] : []),
     ...(usuario.rol === 'admin' ? [['ventas', '💰 Ventas']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['apartados', '📋 Apartados']] : []),
     ...(usuario.rol === 'admin' ? [['configuracion', '⚙️ Configuración']] : []),
     ...(usuario.rol === 'encargado_general' ? [['mi-reporte', '📊 Mi Reporte']] : []),
-    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['apartados', '📋 Apartados']] : []),
-    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['semana', '📅 Semana']] : []),
   ]
     
 
