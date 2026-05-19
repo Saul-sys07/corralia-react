@@ -28,6 +28,7 @@ function Venta({ corral, usuario, onVolver }) {
   const esAdmin = usuario.rol === 'admin'
   const sinComision = ['Destete', 'Desecho'].includes(tipoAnimal)
   const comisionKg = sinComision ? 0 : (COMISIONES[cliente?.tipo] || 0)
+  const precioFinal = precioKg - (cliente?.descuento_kg || 0)
   const disponible = corral.poblacion_actual || 0
   const [mostrarApartado, setMostrarApartado] = useState(false)
   const [anticipo, setAnticipo] = useState('')
@@ -44,10 +45,10 @@ function Venta({ corral, usuario, onVolver }) {
 
   // Calculos por item del carrito
   const calcularItem = (peso, precio) => {
-    const total = esDestete ? Number(precioCabeza) : peso * precio
-    const comision = esDestete ? comisionKg : comisionKg * peso
-    return { total, comision, rancho: total - comision }
-  }
+  const total = esDestete ? Number(precioCabeza) : peso * precioFinal
+  const comision = esDestete ? 0 : comisionKg * peso
+  return { total, comision, rancho: total - comision }
+}
 
   // Totales del carrito
   const totalVenta = carrito.reduce((s, i) => s + i.total, 0)
@@ -182,9 +183,10 @@ function Venta({ corral, usuario, onVolver }) {
     background: '#f1f8e9', borderRadius: '8px', fontSize: '13px', color: '#2E7D32'
   }}>
     ✅ {cliente.nombre} · {sinComision ? 'Sin comisión' : `Comisión: $${COMISIONES[cliente.tipo]}/kg`}
+    {cliente.descuento_kg > 0 && ` · Descuento: $${cliente.descuento_kg}/kg → $${precioFinal}/kg`}
   </div>
-)}
-</div>
+  )}
+  </div>
 
       {/* Precio kg — solo admin puede cambiar */}
       {!esDestete && (
