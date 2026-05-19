@@ -22,6 +22,7 @@ import Monta from './pages/Monta'
 import VerificarPreñez from './pages/VerificarPreñez'
 import Apartados from './pages/Apartados'
 import Semana from './pages/Semana'
+import Nomina from './pages/Nomina'
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth)
@@ -160,6 +161,7 @@ function App() {
 
   const menuItems = [
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
+    ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['nomina', '👥 Nómina']] : []),
     ...((['admin', 'encargado_general', 'parideras', 'crecimiento', 'gestacion'].includes(usuario.rol)) ? [['mapa', '🗺️ Mapa']] : []),
     ...((['admin', 'encargado_general'].includes(usuario.rol)) ? [['almacen', '🏚️ Almacén']] : []),
     ...(usuario.rol === 'admin' ? [['finanzas', '💵 Finanzas']] : []),
@@ -178,6 +180,7 @@ function App() {
 
   const Contenido = () => (
     <>
+      {pagina === 'nomina' && <Nomina usuario={usuario} />}
       {pagina === 'mapa' && <Mapa usuario={usuario} onAccion={handleAccion} />}
       {pagina === 'almacen' && <Almacen usuario={usuario} />}
       {pagina === 'muerte' && corralSeleccionado && <Muerte corral={corralSeleccionado} usuario={usuario} onVolver={handleVolver} />}

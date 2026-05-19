@@ -1,0 +1,162 @@
+import { useState, useEffect } from 'react'
+import api from '../services/api'
+
+function Nomina({ usuario }) {
+  const [trabajadores, setTrabajadores] = useState([])
+  const [montos, setMontos] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [mensaje, setMensaje] = useState('')
+
+  const hoy = new Date()
+  const domingo = new Date(hoy)
+  domingo.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7 + 1) % 7)
+  const semanaStr = domingo.toLocaleDateString('es-MX')
+
+  const cargar = () => {
+    api.get('/finanzas/nomina').then(r => {
+      setTrabajadores(r.data)
+      const init = {}
+      r.data.forEach(t => {
+        init[t.id] = (parseFloat(t.sueldo_diario) * parseInt(t.dias_trabajados)).toFixed(2)
+      })
+      setMontos(init)
+    })
+  }
+
+  useEffect(() => { cargar() }, [])
+
+  const total = Object.values(montos).reduce((s, v) => s + Number(v), 0)
+
+  const confirmar = async () => {
+    setLoading(true)
+    try {
+      await api.post('/finanzas/nomina', {
+        items: trabajadores.map(t => ({
+          nombre: t.nombre,
+          monto: Number(montos[t.id] || 0),
+          dias: t.dias_trabajados
+        })),
+        semana: semanaStr
+      })
+      setMensaje('✅ Nómina registrada correctamente')
+      setTimeout(() => setMensaje(''), 3000)
+      cargar()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: '16px' }}>
+      <h2 style={{ margin: '0 0 4px' }}>👥 Nómina</h2>
+      <p style={{ color: '#888', fontSize: '13px', margin: '0 0 20px' }}>
+        Semana del {semanaStr} — basado en asistencias del checador
+      </p>
+
+      {mensaje && (
+        <div style={{
+          background: '#f1f8e9', border: '1px solid #c5e1a5',
+          borderRadius: '8px', padding: '10px', marginBottom: '16px',
+          color: '#2E7D32', fontWeight: '600'
+        }}>{mensaje}</div>
+      )}
+
+      {trabajadores.map(t => (
+        <div key={t.id} style={{
+          padding: '10px 12px', background: '#f9f9f9',
+          borderRadius: '8px', marginBottom: '8px',
+          border: '1px solid #eee'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <strong>{t.nombre}</strong>
+            <span style={{ color: '#888', fontSize: '13px' }}>
+              {t.dias_trabajados} días × ${parseFloat(t.sueldo_diario).toFixed(2)}/día
+            </span>
+          </div>
+          <input type="number" min={0} value={montos[t.id] || 0}
+            onChange={e => setMontos({ ...montos, [t.id]: e.target.value })}
+            style={inputStyle} />
+        </div>
+      ))}
+
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        fontWeight: '700', fontSize: '18px',
+        padding: '12px', marginBottom: '12px',
+        background: '#ffebee', borderRadius: '8px'
+      }}>
+        <span>Total nómina:</span>
+        <span style={{ color: '#C62828' }}>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+      </div>
+
+      {usuario.rol === 'admin' && (
+        <div style={{ marginBottom: '20px' }}>
+          <ConfigSueldos />
+        </div>
+      )}
+
+      <button onClick={confirmar} disabled={loading}
+        style={{
+          width: '100%', padding: '14px',
+          background: loading ? '#ccc' : '#C62828',
+          color: 'white', border: 'none', borderRadius: '10px',
+          fontSize: '16px', fontWeight: '700', cursor: 'pointer'
+        }}>
+        {loading ? 'Registrando...' : `✅ Confirmar nómina — $${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+      </button>
+    </div>
+  )
+}
+
+function ConfigSueldos() {
+  const [trabajadores, setTrabajadores] = useState([])
+  const [sueldos, setSueldos] = useState({})
+  const [guardado, setGuardado] = useState(null)
+
+  useEffect(() => {
+    api.get('/finanzas/sueldos').then(r => {
+      setTrabajadores(r.data)
+      const init = {}
+      r.data.forEach(t => { init[t.id] = parseFloat(t.sueldo_diario) })
+      setSueldos(init)
+    })
+  }, [])
+
+  const guardar = async (id) => {
+    await api.post('/finanzas/sueldos', { usuario_id: id, sueldo_diario: sueldos[id] })
+    setGuardado(id)
+    setTimeout(() => setGuardado(null), 2000)
+  }
+
+  return (
+    <div>
+      <h3 style={{ margin: '0 0 12px', color: '#444', fontSize: '15px' }}>⚙️ Sueldos diarios</h3>
+      {trabajadores.map(t => (
+        <div key={t.id} style={{
+          padding: '10px 12px', background: '#f5f5f5',
+          borderRadius: '8px', marginBottom: '6px'
+        }}>
+          <div style={{ marginBottom: '6px' }}>
+            <strong>{t.nombre}</strong>
+            <span style={{ color: '#888', fontSize: '12px' }}> — {t.rol}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="number" min={0} value={sueldos[t.id] || 0}
+              onChange={e => setSueldos({ ...sueldos, [t.id]: Number(e.target.value) })}
+              style={{ ...inputStyle, marginBottom: 0 }} />
+            <button onClick={() => guardar(t.id)} style={{
+              padding: '10px 16px',
+              background: guardado === t.id ? '#2E7D32' : '#555',
+              color: 'white', border: 'none', borderRadius: '8px',
+              cursor: 'pointer', fontWeight: '700'
+            }}>{guardado === t.id ? '✅' : '💾'}</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const inputStyle = { width: '100%', padding: '10px', fontSize: '15px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }
+
+export default Nomina
