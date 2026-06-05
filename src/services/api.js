@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://web-production-7c992.up.railway.app',
+  baseURL: import.meta.env.VITE_API_URL || 'https://web-production-7c992.up.railway.app',
 })
 
 // Agregar token automaticamente a cada request

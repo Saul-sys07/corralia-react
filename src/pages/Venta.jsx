@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { obtenerErrorApi } from '../utils/errores'
 
 const COMISIONES = {
   'Nuevo': 3.00,
@@ -99,8 +100,7 @@ function Venta({ corral, usuario, onVolver }) {
     })
     onVolver(true)
   } catch (e) {
-    setError('Error al registrar apartado')
-    setLoading(false)
+    setError(obtenerErrorApi(e, 'Error al registrar apartado'))
   }
 }
 
@@ -124,8 +124,7 @@ function Venta({ corral, usuario, onVolver }) {
       })
       onVolver(true)
     } catch (e) {
-      setError('Error al registrar venta')
-      setLoading(false)
+      setError(obtenerErrorApi(e, 'Error al registrar venta'))
     }
   }
 

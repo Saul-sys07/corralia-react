@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '../services/api'
+import { obtenerErrorApi } from '../utils/errores'
 
 const TIPOS_ANIMAL = [
   'Semental', 'Pie de Cría', 'Crías', 'Destete',
@@ -41,8 +42,8 @@ function Etapa({ corral, usuario, onVolver }) {
       })
       onVolver(true)
     } catch (e) {
-      setError('Error al cambiar etapa')
-      setLoading(false)
+     setError(obtenerErrorApi(e, 'Error al cambiar etapa'))
+     setLoading(false)
     }
   }
 

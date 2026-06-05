@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { obtenerErrorApi } from '../utils/errores'
 
 const TIPOS_ANIMAL = [
   'Semental', 'Pie de Cría', 'Crías', 'Destete',
@@ -68,9 +69,9 @@ function Traslado({ corral, usuario, onVolver }) {
       })
       onVolver(true)
     } catch (e) {
-      setError('Error al registrar traslado')
-      setLoading(false)
-    }
+     setError(obtenerErrorApi(e, 'Error al registrar traslado'))
+     setLoading(false)
+}
   }
 
   return (

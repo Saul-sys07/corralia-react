@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '../services/api'
+import { obtenerErrorApi } from '../utils/errores'
 
 const CAUSAS = [
   'Hernia', 'Aplastamiento', 'Diarrea', 'Neumonía',
@@ -29,7 +30,7 @@ function Muerte({ corral, usuario, onVolver }) {
       })
       onVolver(true) // true = recargar mapa
     } catch (e) {
-      setError('Error al registrar muerte')
+      setError(obtenerErrorApi(e, 'Error al registrar muerte'))
       setLoading(false)
     }
   }
