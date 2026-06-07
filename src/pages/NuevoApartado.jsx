@@ -16,6 +16,7 @@ function NuevoApartado({ usuario, onVolver }) {
   const [notas, setNotas] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const hoy = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     api.get("/clientes").then((r) => setClientes(r.data));
@@ -161,11 +162,12 @@ function NuevoApartado({ usuario, onVolver }) {
       <div style={{ marginBottom: "14px" }}>
         <label style={labelStyle}>Fecha compromiso:</label>
         <input
-          type="date"
-          value={fechaCompromiso}
+         type="date"
+         min={hoy}
+         value={fechaCompromiso}
           onChange={(e) => setFechaCompromiso(e.target.value)}
           style={inputStyle}
-        />
+          />
       </div>
 
       <div style={{ marginBottom: "16px" }}>

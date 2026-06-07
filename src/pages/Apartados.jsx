@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 import NuevoApartado from "./NuevoApartado"
+import LiquidarApartado from "./LiquidarApartado";
 
 function Apartados({ usuario }) {
   const [apartados, setApartados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modoNuevo, setModoNuevo] = useState(false);
+  const [apartadoLiquidar, setApartadoLiquidar] = useState(null);
 
   const cargar = () => {
     api.get("/apartados").then((r) => {
@@ -29,6 +31,19 @@ function Apartados({ usuario }) {
     await api.post(`/apartados/${id}/cancelar`);
     cargar();
   };
+
+if (apartadoLiquidar) {
+  return (
+    <LiquidarApartado
+      apartado={apartadoLiquidar}
+      usuario={usuario}
+      onVolver={(recargar) => {
+        setApartadoLiquidar(null);
+        if (recargar) cargar();
+      }}
+    />
+  );
+}
 
   if (modoNuevo) {
     return (
@@ -169,7 +184,7 @@ function Apartados({ usuario }) {
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
-                onClick={() => liquidar(a.id)}
+                onClick={() => setApartadoLiquidar(a)}
                 style={{
                   flex: 1,
                   padding: "10px",
