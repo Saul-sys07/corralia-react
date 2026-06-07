@@ -239,7 +239,14 @@ function App() {
     ...(["admin", "encargado_general"].includes(usuario.rol)
       ? [["almacen", "🏚️ Almacén"]]
       : []),
-    ...(usuario.rol === "admin" ? [["depositos", "💰 Depósitos"]] : []),
+    ...(["admin", "encargado_general"].includes(usuario.rol)
+  ? [
+      [
+        "depositos",
+        usuario.rol === "admin" ? "💰 Depósitos" : "💵 Dinero recibido",
+      ],
+    ]
+  : []),
     ...(["admin", "encargado_general"].includes(usuario.rol)
       ? [["nomina", "👥 Nómina"]]
       : []),
