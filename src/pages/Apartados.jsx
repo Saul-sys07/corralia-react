@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
+import NuevoApartado from "./NuevoApartado"
 
 function Apartados({ usuario }) {
   const [apartados, setApartados] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [modoNuevo, setModoNuevo] = useState(false);
 
   const cargar = () => {
     api.get("/apartados").then((r) => {
@@ -28,6 +30,18 @@ function Apartados({ usuario }) {
     cargar();
   };
 
+  if (modoNuevo) {
+    return (
+      <NuevoApartado
+        usuario={usuario}
+        onVolver={(recargar) => {
+          setModoNuevo(false)
+          if (recargar) cargar()
+        }}
+      />
+    )
+  }
+
   if (loading)
     return <p style={{ padding: "16px", color: "#888" }}>Cargando...</p>;
 
@@ -38,6 +52,24 @@ function Apartados({ usuario }) {
         {apartados.length} apartado{apartados.length !== 1 ? "s" : ""} activo
         {apartados.length !== 1 ? "s" : ""}
       </p>
+
+      <button
+        onClick={() => setModoNuevo(true)}
+        style={{
+          width: '100%',
+          padding: '14px',
+          background: '#E65100',
+          color: 'white',
+          border: 'none',
+          borderRadius: '10px',
+          fontSize: '16px',
+          fontWeight: '700',
+          cursor: 'pointer',
+          marginBottom: '16px'
+        }}
+      >
+        ➕ Nuevo apartado
+      </button>
 
       {apartados.length === 0 && (
         <div

@@ -27,20 +27,17 @@ function Venta({ corral, usuario, onVolver }) {
   const [precioCabeza, setPrecioCabeza] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const [mostrarApartado, setMostrarApartado] = useState(false);
-  const [anticipo, setAnticipo] = useState("");
-  const [fechaCompromiso, setFechaCompromiso] = useState("");
-  const [notasApartado, setNotasApartado] = useState("");
+  const [apartadosActivos, setApartadosActivos] = useState([]);
 
   const esDestete = tipoAnimal === "Destete";
   const esDesecho = tipoAnimal === "Desecho";
   const ventaPorCabeza = esDestete || esDesecho;
+
   const esAdmin = usuario.rol === "admin";
   const esBeyin = usuario.nombre?.trim().toLowerCase() === "beyin";
 
   const precioMinimoBeyin = 45;
-  const puedeEditarPrecioKg = esAdmin || esBeyin || esDesecho;
+  const puedeEditarPrecioKg = esAdmin || esBeyin;
 
   const sinComision = ["Destete", "Desecho"].includes(tipoAnimal);
   const comisionKg = sinComision ? 0 : COMISIONES[cliente?.tipo] || 0;
@@ -50,14 +47,26 @@ function Venta({ corral, usuario, onVolver }) {
   const precioInvalidoBeyin =
     esBeyin && !ventaPorCabeza && Number(precioKg) < precioMinimoBeyin;
 
-  const disponible = corral.poblacion_actual || 0;
+  const apartadoActivo = apartadosActivos
+    .filter(
+      (a) =>
+        Number(a.id_chiquero) === Number(corral.id) &&
+        a.tipo_animal === tipoAnimal
+    )
+    .reduce((s, a) => s + Number(a.cantidad || 0), 0);
+
+  const disponibleFisico = corral.poblacion_actual || 0;
+  const disponible = Math.max(disponibleFisico - apartadoActivo, 0);
 
   useEffect(() => {
     api.get("/clientes").then((r) => setClientes(r.data));
+
     api.get("/precio-dia").then((r) => {
       setPrecioSistema(r.data.precio);
       setPrecioKg(r.data.precio);
     });
+
+    api.get("/apartados").then((r) => setApartadosActivos(r.data));
   }, []);
 
   const cambiarTipoAnimal = (t) => {
@@ -67,9 +76,7 @@ function Venta({ corral, usuario, onVolver }) {
     setPesoActual("");
     setPrecioCabeza("");
 
-    if (t === "Desecho") {
-      setPrecioKg("");
-    } else if (t !== "Destete") {
+    if (t !== "Destete" && t !== "Desecho") {
       setPrecioKg(precioSistema);
     }
   };
@@ -77,7 +84,11 @@ function Venta({ corral, usuario, onVolver }) {
   const calcularItem = (peso, precio) => {
     if (ventaPorCabeza) {
       const total = Number(precioCabeza);
-      return { total, comision: 0, rancho: total };
+      return {
+        total,
+        comision: 0,
+        rancho: total,
+      };
     }
 
     const precioNeto = Number(precio) - descuentoKg;
@@ -105,6 +116,7 @@ function Venta({ corral, usuario, onVolver }) {
       }
 
       const item = calcularItem(0, 0);
+
       setCarrito([
         ...carrito,
         {
@@ -114,6 +126,7 @@ function Venta({ corral, usuario, onVolver }) {
           ...item,
         },
       ]);
+
       setPrecioCabeza("");
       return;
     }
@@ -134,6 +147,7 @@ function Venta({ corral, usuario, onVolver }) {
     }
 
     const item = calcularItem(Number(pesoActual), Number(precioKg));
+
     setCarrito([
       ...carrito,
       {
@@ -143,35 +157,12 @@ function Venta({ corral, usuario, onVolver }) {
         ...item,
       },
     ]);
+
     setPesoActual("");
   };
 
   const quitarDelCarrito = (idx) => {
     setCarrito(carrito.filter((_, i) => i !== idx));
-  };
-
-  const handleApartar = async () => {
-    if (!cliente || carrito.length === 0 || !anticipo || !fechaCompromiso)
-      return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      await api.post("/apartados", {
-        cliente_id: cliente.id,
-        id_chiquero: corral.id,
-        tipo_animal: tipoAnimal,
-        cantidad: carrito.length,
-        anticipo: Number(anticipo),
-        fecha_compromiso: fechaCompromiso,
-        notas: notasApartado,
-      });
-      onVolver(true);
-    } catch (e) {
-      setError(obtenerErrorApi(e, "Error al registrar apartado"));
-      setLoading(false);
-    }
   };
 
   const handleConfirmar = async () => {
@@ -194,12 +185,19 @@ function Venta({ corral, usuario, onVolver }) {
         total_comision: totalComision,
         es_destete: esDestete,
       });
+
       onVolver(true);
     } catch (e) {
       setError(obtenerErrorApi(e, "Error al registrar venta"));
       setLoading(false);
     }
   };
+
+  const botonAgregarBloqueado =
+    loading ||
+    !cliente ||
+    (!ventaPorCabeza && (!pesoActual || !precioKg || precioInvalidoBeyin)) ||
+    (ventaPorCabeza && !precioCabeza);
 
   return (
     <div style={{ padding: "16px" }}>
@@ -218,13 +216,34 @@ function Venta({ corral, usuario, onVolver }) {
       </button>
 
       <h2 style={{ margin: "0 0 4px" }}>💰 Registrar Venta</h2>
+
       <p style={{ color: "#888", margin: "0 0 20px" }}>
         {corral.nombre} · {corral.zona}
       </p>
 
+      {apartadoActivo > 0 && (
+        <div
+          style={{
+            background: "#fff3e0",
+            border: "1px solid #ffcc80",
+            borderRadius: "8px",
+            padding: "10px 12px",
+            marginBottom: "16px",
+            color: "#E65100",
+            fontSize: "13px",
+            fontWeight: "600",
+          }}
+        >
+          📋 {apartadoActivo} {tipoAnimal} apartado
+          {apartadoActivo !== 1 ? "s" : ""}. Disponible para venta: {disponible} de{" "}
+          {disponibleFisico}.
+        </div>
+      )}
+
       {tipos.length > 1 && (
         <div style={{ marginBottom: "16px" }}>
           <label style={labelStyle}>Tipo:</label>
+
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             {tipos.map((t) => (
               <button
@@ -241,6 +260,7 @@ function Venta({ corral, usuario, onVolver }) {
 
       <div style={{ marginBottom: "16px" }}>
         <label style={labelStyle}>Cliente:</label>
+
         <select
           value={cliente?.id || ""}
           onChange={(e) => {
@@ -260,6 +280,7 @@ function Venta({ corral, usuario, onVolver }) {
           }}
         >
           <option value="">— Selecciona un cliente —</option>
+
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre} — {c.tipo} (${COMISIONES[c.tipo]}/kg)
@@ -303,9 +324,7 @@ function Venta({ corral, usuario, onVolver }) {
                 setError("");
               }}
               style={inputStyle}
-              placeholder={
-                esDesecho ? "Captura precio de desecho" : "Precio por kg"
-              }
+              placeholder="Precio por kg"
             />
           ) : (
             <div
@@ -321,7 +340,7 @@ function Venta({ corral, usuario, onVolver }) {
             </div>
           )}
 
-          {esBeyin && !esDestete && (
+          {esBeyin && (
             <p
               style={{
                 margin: "6px 0 0",
@@ -333,18 +352,24 @@ function Venta({ corral, usuario, onVolver }) {
               Precio mínimo permitido para Beyin: ${precioMinimoBeyin}/kg
             </p>
           )}
+        </div>
+      )}
 
-          {esDesecho && (
-            <p
-              style={{
-                margin: "6px 0 0",
-                color: "#666",
-                fontSize: "12px",
-              }}
-            >
-              Desecho usa precio editable y no genera comisión.
-            </p>
-          )}
+      {ventaPorCabeza && (
+        <div
+          style={{
+            background: "#fff8e1",
+            border: "1px solid #ffe082",
+            borderRadius: "8px",
+            padding: "10px 12px",
+            marginBottom: "16px",
+            fontSize: "13px",
+            color: "#666",
+          }}
+        >
+          {esDesecho
+            ? "Desecho se vende por precio pactado y no genera comisión."
+            : "Destete se vende por precio por cabeza y no genera comisión."}
         </div>
       )}
 
@@ -360,7 +385,8 @@ function Venta({ corral, usuario, onVolver }) {
         >
           <label style={labelStyle}>
             {ventaPorCabeza
-              ? `${esDesecho ? "Desecho" : "Cerdo"} ${carrito.length + 1} — Precio pactado ($):`
+              ? `${esDesecho ? "Desecho" : "Cerdo"} ${carrito.length + 1
+              } — Precio pactado ($):`
               : `Cerdo ${carrito.length + 1} — Peso (kg):`}
           </label>
 
@@ -381,27 +407,14 @@ function Venta({ corral, usuario, onVolver }) {
 
             <button
               onClick={agregarAlCarrito}
-              disabled={
-                loading ||
-                !cliente ||
-                (!ventaPorCabeza &&
-                  (!pesoActual || !precioKg || precioInvalidoBeyin)) ||
-                (ventaPorCabeza && !precioCabeza)
-              }
+              disabled={botonAgregarBloqueado}
               style={{
                 padding: "12px 16px",
-                background:
-                  loading ||
-                  !cliente ||
-                  (!esDestete &&
-                    (!pesoActual || !precioKg || precioInvalidoBeyin)) ||
-                  (esDestete && !precioCabeza)
-                    ? "#ccc"
-                    : "#2E7D32",
+                background: botonAgregarBloqueado ? "#ccc" : "#2E7D32",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
-                cursor: "pointer",
+                cursor: botonAgregarBloqueado ? "not-allowed" : "pointer",
                 fontWeight: "700",
                 whiteSpace: "nowrap",
               }}
@@ -418,9 +431,29 @@ function Venta({ corral, usuario, onVolver }) {
         </div>
       )}
 
+      {carrito.length >= disponible && (
+        <div
+          style={{
+            background: "#fff3e0",
+            border: "1px solid #ffcc80",
+            borderRadius: "8px",
+            padding: "10px 12px",
+            marginBottom: "16px",
+            color: "#E65100",
+            fontSize: "13px",
+            fontWeight: "600",
+          }}
+        >
+          Ya agregaste el máximo disponible en este corral.
+        </div>
+      )}
+
       {carrito.length > 0 && (
         <div style={{ marginBottom: "16px" }}>
-          <label style={labelStyle}>Carrito ({carrito.length} cerdos):</label>
+          <label style={labelStyle}>
+            Carrito ({carrito.length} animal
+            {carrito.length !== 1 ? "es" : ""}):
+          </label>
 
           {carrito.map((item, idx) => (
             <div
@@ -446,6 +479,7 @@ function Venta({ corral, usuario, onVolver }) {
                 <span style={{ fontWeight: "700", color: "#2E7D32" }}>
                   ${item.rancho.toFixed(2)}
                 </span>
+
                 <button
                   onClick={() => quitarDelCarrito(idx)}
                   style={{
@@ -481,6 +515,7 @@ function Venta({ corral, usuario, onVolver }) {
               <span>Total venta:</span>
               <strong>${totalVenta.toFixed(2)}</strong>
             </div>
+
             <div
               style={{
                 display: "flex",
@@ -493,6 +528,7 @@ function Venta({ corral, usuario, onVolver }) {
                 -${totalComision.toFixed(2)}
               </span>
             </div>
+
             <div
               style={{
                 display: "flex",
@@ -514,132 +550,34 @@ function Venta({ corral, usuario, onVolver }) {
         <p style={{ color: "#C62828", marginBottom: "12px" }}>{error}</p>
       )}
 
-      {!mostrarApartado ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <button
-            onClick={handleConfirmar}
-            disabled={loading || !cliente || carrito.length === 0}
-            style={{
-              width: "100%",
-              padding: "14px",
-              background:
-                loading || !cliente || carrito.length === 0
-                  ? "#ccc"
-                  : "#2E7D32",
-              color: "white",
-              border: "none",
-              borderRadius: "10px",
-              fontSize: "16px",
-              fontWeight: "700",
-              cursor: "pointer",
-            }}
-          >
-            {loading
-              ? "Registrando..."
-              : `💰 Vender ${carrito.length} cerdos — $${totalRancho.toFixed(2)}`}
-          </button>
-
-          <button
-            onClick={() => setMostrarApartado(true)}
-            disabled={!cliente || carrito.length === 0}
-            style={{
-              width: "100%",
-              padding: "14px",
-              background: !cliente || carrito.length === 0 ? "#ccc" : "#E65100",
-              color: "white",
-              border: "none",
-              borderRadius: "10px",
-              fontSize: "16px",
-              fontWeight: "700",
-              cursor: "pointer",
-            }}
-          >
-            📋 Apartar {carrito.length} cerdos
-          </button>
-        </div>
-      ) : (
-        <div
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <button
+          onClick={handleConfirmar}
+          disabled={loading || !cliente || carrito.length === 0}
           style={{
-            background: "#fff3e0",
-            border: "1px solid #FFB74D",
+            width: "100%",
+            padding: "14px",
+            background:
+              loading || !cliente || carrito.length === 0
+                ? "#ccc"
+                : "#2E7D32",
+            color: "white",
+            border: "none",
             borderRadius: "10px",
-            padding: "16px",
+            fontSize: "16px",
+            fontWeight: "700",
+            cursor:
+              loading || !cliente || carrito.length === 0
+                ? "not-allowed"
+                : "pointer",
           }}
         >
-          <h3 style={{ margin: "0 0 12px", color: "#E65100" }}>
-            📋 Registrar Apartado
-          </h3>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label style={labelStyle}>Anticipo recibido ($):</label>
-            <input
-              type="number"
-              min={0}
-              value={anticipo}
-              onChange={(e) => setAnticipo(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label style={labelStyle}>Fecha de compromiso:</label>
-            <input
-              type="date"
-              value={fechaCompromiso}
-              onChange={(e) => setFechaCompromiso(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: "16px" }}>
-            <label style={labelStyle}>Notas (opcional):</label>
-            <input
-              type="text"
-              value={notasApartado}
-              onChange={(e) => setNotasApartado(e.target.value)}
-              placeholder="Ej: viene el sábado a las 10am"
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={handleApartar}
-              disabled={loading || !anticipo || !fechaCompromiso}
-              style={{
-                flex: 1,
-                padding: "14px",
-                background:
-                  loading || !anticipo || !fechaCompromiso ? "#ccc" : "#E65100",
-                color: "white",
-                border: "none",
-                borderRadius: "10px",
-                fontSize: "15px",
-                fontWeight: "700",
-                cursor: "pointer",
-              }}
-            >
-              {loading ? "Registrando..." : "📋 Confirmar apartado"}
-            </button>
-
-            <button
-              onClick={() => setMostrarApartado(false)}
-              style={{
-                flex: 1,
-                padding: "14px",
-                background: "#f0f0f0",
-                color: "#555",
-                border: "none",
-                borderRadius: "10px",
-                fontSize: "15px",
-                cursor: "pointer",
-              }}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+          {loading
+            ? "Registrando..."
+            : `💰 Vender ${carrito.length} animal${carrito.length !== 1 ? "es" : ""
+            } — $${totalRancho.toFixed(2)}`}
+        </button>
+      </div>
     </div>
   );
 }
