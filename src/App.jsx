@@ -274,7 +274,14 @@ function App() {
     ...(["admin", "encargado_general"].includes(usuario.rol)
       ? [["apartados", "📋 Apartados"]]
       : []),
-    ...(usuario.rol === "admin" ? [["configuracion", "⚙️ Configuración"]] : []),
+    ...(["admin", "encargado_general"].includes(usuario.rol)
+  ? [
+      [
+        "configuracion",
+        usuario.rol === "admin" ? "⚙️ Configuración" : "🏠 Corrales",
+      ],
+    ]
+  : []),
   ];
 
   const Contenido = () => (
@@ -334,7 +341,7 @@ function App() {
       {pagina === "reportes" && <Reportes />}
       {pagina === "clientes" && <Clientes usuario={usuario} />}
       {pagina === "ventas" && <Ventas />}
-      {pagina === "configuracion" && <Configuracion />}
+      {pagina === "configuracion" && <Configuracion usuario={usuario} />}
       {pagina === "movimientos" && <Movimientos />}
       {pagina === "mi-reporte" && <MiReporte />}
       {pagina === "monta" && corralSeleccionado && (

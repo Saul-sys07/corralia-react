@@ -11,8 +11,8 @@ const ROLES = [
 
 const ESTADOS_PC = ["Disponible", "Cubierta", "Gestación", "Parida", "Desecho"];
 
-function Configuracion() {
-  const [tab, setTab] = useState("precio");
+function Configuracion({ usuario }) {
+  const [tab, setTab] = useState(usuario?.rol === "admin" ? "precio" : "corrales");
   const [precio, setPrecio] = useState(48);
   const [corrales, setCorrales] = useState([]);
   const [mapa, setMapa] = useState([]);
@@ -20,6 +20,8 @@ function Configuracion() {
   const [pieCria, setPieCria] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const esAdmin = usuario?.rol === "admin";
+  const [solicitudesCorrales, setSolicitudesCorrales] = useState([]);
 
   const cargar = () => {
     api.get("/configuracion/precio").then((r) => setPrecio(r.data.precio));
@@ -27,6 +29,12 @@ function Configuracion() {
     api.get("/mapa").then((r) => setMapa(r.data));
     api.get("/usuarios").then((r) => setUsuarios(r.data));
     api.get("/configuracion/pie-de-cria").then((r) => setPieCria(r.data));
+
+    if (usuario?.rol === "admin") {
+      api
+    .get("/configuracion/corrales/solicitudes")
+    .then((r) => setSolicitudesCorrales(r.data));
+}
   };
 
   useEffect(() => {
@@ -41,46 +49,70 @@ function Configuracion() {
     setTimeout(() => setMensaje(""), 3000);
   };
 
+  const confirmarSolicitudCorral = async (id) => {
+  if (!confirm("¿Confirmar creación de este corral?")) return;
+
+  await api.post(`/configuracion/corrales/solicitudes/${id}/confirmar`);
+
+  setMensaje("✅ Corral confirmado y creado");
+  setTimeout(() => setMensaje(""), 3000);
+  cargar();
+};
+
+const rechazarSolicitudCorral = async (id) => {
+  if (!confirm("¿Rechazar esta solicitud de corral?")) return;
+
+  await api.post(`/configuracion/corrales/solicitudes/${id}/rechazar`);
+
+  setMensaje("❌ Solicitud rechazada");
+  setTimeout(() => setMensaje(""), 3000);
+  cargar();
+};
+
   return (
     <div style={{ padding: "16px" }}>
-      <h2 style={{ margin: "0 0 16px" }}>⚙️ Configuración</h2>
+      <h2 style={{ margin: "0 0 16px" }}>
+  {esAdmin ? "⚙️ Configuración" : "🏠 Corrales"}
+</h2>
 
-      <div
+      {esAdmin && (
+  <div
+    style={{
+      display: "flex",
+      gap: "4px",
+      marginBottom: "16px",
+      flexWrap: "wrap",
+    }}
+  >
+    {[
+      ["precio", "💲 Precio"],
+      ["sueldos", "💰 Sueldos"],
+      ["nuclear", "☢️ Reset"],
+      ["piecria", "🐷 Pie de Cría"],
+      ["animales", "📦 Animales"],
+      ["corrales", "🏠 Corrales"],
+      ["usuarios", "👥 Usuarios"],
+    ].map(([key, label]) => (
+      <button
+        key={key}
+        onClick={() => setTab(key)}
         style={{
-          display: "flex",
-          gap: "4px",
-          marginBottom: "16px",
-          flexWrap: "wrap",
+          flex: 1,
+          padding: "8px",
+          border: "none",
+          borderRadius: "8px",
+          background: tab === key ? "#2E7D32" : "#f0f0f0",
+          color: tab === key ? "white" : "#555",
+          fontWeight: tab === key ? "700" : "400",
+          cursor: "pointer",
+          fontSize: "11px",
         }}
       >
-        {[
-          ["precio", "💲 Precio"],
-          ["sueldos", "💰 Sueldos"],
-          ["nuclear", "☢️ Reset"],
-          ["piecria", "🐷 Pie de Cría"],
-          ["animales", "📦 Animales"],
-          ["corrales", "🏠 Corrales"],
-          ["usuarios", "👥 Usuarios"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              flex: 1,
-              padding: "8px",
-              border: "none",
-              borderRadius: "8px",
-              background: tab === key ? "#2E7D32" : "#f0f0f0",
-              color: tab === key ? "white" : "#555",
-              fontWeight: tab === key ? "700" : "400",
-              cursor: "pointer",
-              fontSize: "11px",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+        {label}
+      </button>
+    ))}
+  </div>
+)}
 
       {mensaje && (
         <div
@@ -151,29 +183,116 @@ function Configuracion() {
         />
       )}
 
-      {tab === "corrales" && (
-        <div>
-          <p style={{ color: "#666", marginBottom: "12px", fontSize: "14px" }}>
-            {corrales.length} corrales registrados
-          </p>
-          {["Parideras", "Gestacion", "Crecimiento"].map((zona) => (
-            <div key={zona} style={{ marginBottom: "16px" }}>
-              <h4 style={{ margin: "0 0 8px", color: "#444" }}>{zona}</h4>
-              {corrales
-                .filter((c) => c.zona === zona)
-                .map((c, i) => (
-                  <CorralItem
-                    key={i}
-                    corral={c}
-                    onRefresh={cargar}
-                    setMensaje={setMensaje}
-                  />
-                ))}
-            </div>
-          ))}
-          <CrearCorral onRefresh={cargar} setMensaje={setMensaje} />
+      {tab === "corrales" && (      
+  <div>
+
+{esAdmin && solicitudesCorrales.length > 0 && (
+  <div style={{ marginBottom: "20px" }}>
+    <h3 style={{ margin: "0 0 8px", color: "#E65100" }}>
+      ⏳ Corrales pendientes por confirmar
+    </h3>
+
+    {solicitudesCorrales.map((s) => (
+      <div
+        key={s.id}
+        style={{
+          background: "#fff3e0",
+          border: "1px solid #ffcc80",
+          borderRadius: "8px",
+          padding: "10px 12px",
+          marginBottom: "8px",
+        }}
+      >
+        <div style={{ fontWeight: "700", marginBottom: "4px" }}>
+          {s.nombre} — {s.zona}
         </div>
-      )}
+
+        <div style={{ fontSize: "13px", color: "#555", marginBottom: "4px" }}>
+          Tipo: {s.tipo} · Solicitado por: {s.usuario_id}
+        </div>
+
+        {s.notas && (
+          <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+            📝 {s.notas}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => confirmarSolicitudCorral(s.id)}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: "#2E7D32",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            ✅ Confirmar
+          </button>
+
+          <button
+            onClick={() => rechazarSolicitudCorral(s.id)}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: "#f0f0f0",
+              color: "#C62828",
+              border: "1px solid #C62828",
+              borderRadius: "8px",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            ❌ Rechazar
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+    {!esAdmin && (
+      <CrearCorral
+        usuario={usuario}
+        onRefresh={cargar}
+        setMensaje={setMensaje}
+      />
+    )}
+
+    <p style={{ color: "#666", marginBottom: "12px", fontSize: "14px" }}>
+      {corrales.length} corrales registrados
+    </p>
+
+    {["Parideras", "Gestacion", "Crecimiento"].map((zona) => (
+      <div key={zona} style={{ marginBottom: "16px" }}>
+        <h4 style={{ margin: "0 0 8px", color: "#444" }}>{zona}</h4>
+        {corrales
+          .filter((c) => c.zona === zona)
+          .map((c, i) => (
+            <CorralItem
+              key={i}
+              corral={c}
+              usuario={usuario}
+              onRefresh={cargar}
+              setMensaje={setMensaje}
+            />
+          ))}
+      </div>
+    ))}
+
+    {esAdmin && (
+      <CrearCorral
+        usuario={usuario}
+        onRefresh={cargar}
+        setMensaje={setMensaje}
+      />
+    )}
+  </div>
+)}
 
       {tab === "usuarios" && (
         <UsuariosTab
@@ -453,7 +572,7 @@ function RegistrarAnimales({ corrales, mapa, onRefresh, setMensaje }) {
   );
 }
 
-function CrearCorral({ onRefresh, setMensaje }) {
+function CrearCorral({ usuario, onRefresh, setMensaje }) {
   const TIPOS_CORRAL = ["Paridera", "Comunal", "Semental"];
   const ZONAS = ["Parideras", "Gestacion", "Crecimiento"];
 
@@ -465,36 +584,54 @@ function CrearCorral({ onRefresh, setMensaje }) {
   const [capacidad, setCapacidad] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const esAdmin = usuario?.rol === "admin";
 
   const area = largo && ancho ? (largo * ancho).toFixed(2) : null;
-  const necesitaMedidas = zona === "Crecimiento";
+  const necesitaMedidas = esAdmin && zona === "Crecimiento";
 
   const confirmar = async () => {
-    if (!nombre || !capacidad) return;
-    if (necesitaMedidas && (!largo || !ancho)) return;
-    setLoading(true);
-    setError("");
-    try {
-      await api.post("/configuracion/corrales", {
-        nombre,
-        tipo,
-        zona,
-        largo: largo ? Number(largo) : null,
-        ancho: ancho ? Number(ancho) : null,
-        capacidad_max: Number(capacidad),
-      });
-      setNombre("");
-      setLargo("");
-      setAncho("");
-      setCapacidad("");
-      setMensaje(`✅ Corral ${nombre} creado`);
-      setTimeout(() => setMensaje(""), 3000);
-      onRefresh();
-    } catch (e) {
-      setError(e.response?.data?.detail || "Error al crear corral");
-      setLoading(false);
-    }
-  };
+  if (!nombre || !zona) return;
+  if (esAdmin && !capacidad) return;
+  if (necesitaMedidas && (!largo || !ancho)) return;
+
+  setLoading(true);
+  setError("");
+
+  try {
+    if (esAdmin) {
+  await api.post("/configuracion/corrales", {
+    nombre,
+    tipo,
+    zona,
+    largo: largo ? Number(largo) : null,
+    ancho: ancho ? Number(ancho) : null,
+    capacidad_max: Number(capacidad),
+  });
+} else {
+  await api.post("/configuracion/corrales/solicitudes", {
+    nombre,
+    tipo: "Comunal",
+    zona,
+    notas: "",
+  });
+}
+
+    setNombre("");
+    setLargo("");
+    setAncho("");
+    setCapacidad("");
+    setMensaje(
+  esAdmin
+    ? `✅ Corral ${nombre} creado`
+    : `✅ Solicitud de corral ${nombre} enviada`
+);
+    setTimeout(() => setMensaje(""), 3000);
+    onRefresh();
+  } catch (e) {
+    setError(e.response?.data?.detail || "Error al crear corral");
+    setLoading(false);
+  }
+};
 
   return (
     <div
@@ -504,7 +641,9 @@ function CrearCorral({ onRefresh, setMensaje }) {
         paddingTop: "20px",
       }}
     >
-      <h4 style={{ margin: "0 0 12px" }}>➕ Nuevo corral</h4>
+      <h4 style={{ margin: "0 0 12px" }}>
+  {esAdmin ? "➕ Nuevo corral" : "➕ Nuevo corral rápido"}
+</h4>
 
       <div style={{ marginBottom: "12px" }}>
         <label style={labelStyle}>Nombre:</label>
@@ -517,20 +656,22 @@ function CrearCorral({ onRefresh, setMensaje }) {
         />
       </div>
 
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>Tipo:</label>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {TIPOS_CORRAL.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTipo(t)}
-              style={chipStyle(tipo === t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
+      {esAdmin && (
+  <div style={{ marginBottom: "12px" }}>
+    <label style={labelStyle}>Tipo:</label>
+    <div style={{ display: "flex", gap: "6px" }}>
+      {TIPOS_CORRAL.map((t) => (
+        <button
+          key={t}
+          onClick={() => setTipo(t)}
+          style={chipStyle(tipo === t)}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
       <div style={{ marginBottom: "12px" }}>
         <label style={labelStyle}>Zona:</label>
@@ -547,16 +688,18 @@ function CrearCorral({ onRefresh, setMensaje }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>Capacidad (animales):</label>
-        <input
-          type="number"
-          min={1}
-          value={capacidad}
-          onChange={(e) => setCapacidad(e.target.value)}
-          style={inputStyle}
-        />
-      </div>
+      {esAdmin && (
+  <div style={{ marginBottom: "12px" }}>
+    <label style={labelStyle}>Capacidad (animales):</label>
+    <input
+      type="number"
+      min={1}
+      value={capacidad}
+      onChange={(e) => setCapacidad(e.target.value)}
+      style={inputStyle}
+    />
+  </div>
+)}
 
       {necesitaMedidas && (
         <div
@@ -598,11 +741,17 @@ function CrearCorral({ onRefresh, setMensaje }) {
         </p>
       )}
 
-      {!necesitaMedidas && (
-        <p style={{ color: "#888", fontSize: "12px", margin: "0 0 12px" }}>
-          Parideras y Gestación no requieren medidas
-        </p>
-      )}
+      {!esAdmin && (
+  <p style={{ color: "#888", fontSize: "12px", margin: "0 0 12px" }}>
+    La solicitud quedará pendiente hasta que admin confirme el nuevo corral.
+  </p>
+)}
+
+{esAdmin && !necesitaMedidas && (
+  <p style={{ color: "#888", fontSize: "12px", margin: "0 0 12px" }}>
+    Parideras y Gestación no requieren medidas
+  </p>
+)}
 
       {error && (
         <p style={{ color: "#C62828", marginBottom: "8px" }}>{error}</p>
@@ -611,15 +760,16 @@ function CrearCorral({ onRefresh, setMensaje }) {
       <button
         onClick={confirmar}
         disabled={
-          loading ||
-          !nombre ||
-          !capacidad ||
-          (necesitaMedidas && (!largo || !ancho))
-        }
+  loading ||
+  !nombre ||
+  (esAdmin && !capacidad) ||
+  (necesitaMedidas && (!largo || !ancho))
+}
         style={{
           width: "100%",
           padding: "12px",
-          background: loading || !nombre || !capacidad ? "#ccc" : "#1976D2",
+          background:
+  loading || !nombre || (esAdmin && !capacidad) ? "#ccc" : "#1976D2",
           color: "white",
           border: "none",
           borderRadius: "8px",
@@ -627,7 +777,13 @@ function CrearCorral({ onRefresh, setMensaje }) {
           cursor: "pointer",
         }}
       >
-        {loading ? "Creando..." : `Crear ${nombre || "corral"}`}
+        {loading
+  ? esAdmin
+    ? "Creando..."
+    : "Enviando..."
+  : esAdmin
+    ? `Crear ${nombre || "corral"}`
+    : `Solicitar ${nombre || "corral"}`}
       </button>
     </div>
   );
@@ -787,8 +943,9 @@ function EditarCorral({ corral, onGuardar, onCancelar }) {
     </div>
   );
 }
-function CorralItem({ corral, onRefresh, setMensaje }) {
+function CorralItem({ corral, usuario, onRefresh, setMensaje }) {
   const [editando, setEditando] = useState(false);
+  const esAdmin = usuario?.rol === "admin";
 
   if (editando) {
     return (
@@ -820,25 +977,30 @@ function CorralItem({ corral, onRefresh, setMensaje }) {
       <div>
         <strong>{corral.nombre}</strong> — {corral.tipo}
         <div style={{ fontSize: "12px", color: "#888" }}>
-          Cap: {corral.capacidad_max}{" "}
-          {corral.area_m2 ? `· ${parseFloat(corral.area_m2).toFixed(1)}m²` : ""}
+          {corral.capacidad_max > 0
+  ? `Cap: ${corral.capacidad_max}`
+  : "Cap: pendiente"}{" "}
+{corral.area_m2 ? `· ${parseFloat(corral.area_m2).toFixed(1)}m²` : ""}
         </div>
       </div>
-      <button
-        onClick={() => setEditando(true)}
-        style={{
-          padding: "6px 12px",
-          background: "#1976D2",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer",
-          fontSize: "12px",
-          fontWeight: "600",
-        }}
-      >
-        ✏️ Editar
-      </button>
+
+      {esAdmin && (
+  <button
+    onClick={() => setEditando(true)}
+    style={{
+      padding: "6px 12px",
+      background: "#1976D2",
+      color: "white",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer",
+      fontSize: "12px",
+      fontWeight: "600",
+    }}
+  >
+    ✏️ Editar
+  </button>
+)}
     </div>
   );
 }
