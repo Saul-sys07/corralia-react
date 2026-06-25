@@ -23,6 +23,7 @@ import Apartados from "./pages/Apartados";
 import Semana from "./pages/Semana";
 import Nomina from "./pages/Nomina";
 import Depositos from "./pages/Depositos";
+import Reproductores from "./pages/Reproductores";
 
 function useAncho() {
   const [ancho, setAncho] = useState(window.innerWidth);
@@ -69,13 +70,15 @@ function App() {
   }, [usuario]);
 
   useEffect(() => {
-    if (
-      usuario &&
-      ["admin", "encargado_general", "gestacion"].includes(usuario.rol)
-    ) {
-      api.get("/notificaciones").then((r) => setNotificaciones(r.data));
-    }
-  }, [usuario]);
+  if (
+    usuario &&
+    ["admin", "encargado_general", "gestacion"].includes(usuario.rol)
+  ) {
+    api.get("/notificaciones").then((r) => {
+      setNotificaciones(Array.isArray(r.data) ? r.data : []);
+    });
+  }
+}, [usuario]);
 
   const handleLogin = (u, tokenTemporal) => {
     if (u.primer_acceso) {
@@ -116,41 +119,46 @@ function App() {
     setNotificaciones((prev) => prev.filter((x) => x.id !== id));
   };
 
-  const BannerNotificaciones = () =>
-    notificaciones.length > 0 ? (
-      <div style={{ padding: "8px 16px" }}>
-        {notificaciones.map((n) => (
-          <div
-            key={n.id}
+  const BannerNotificaciones = () => {
+  const lista = Array.isArray(notificaciones) ? notificaciones : [];
+
+  return lista.length > 0 ? (
+    <div style={{ padding: "8px 16px" }}>
+      {lista.map((n) => (
+        <div
+          key={n.id}
+          style={{
+            background: n.tipo === "alerta_parto" ? "#ffebee" : "#fff8e1",
+            border: `1px solid ${
+              n.tipo === "alerta_parto" ? "#EF9A9A" : "#FFD54F"
+            }`,
+            borderRadius: "8px",
+            padding: "10px 14px",
+            marginBottom: "6px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: "14px", color: "#333" }}>{n.mensaje}</span>
+          <button
+            onClick={() => cerrarNotificacion(n.id)}
             style={{
-              background: n.tipo === "alerta_parto" ? "#ffebee" : "#fff8e1",
-              border: `1px solid ${n.tipo === "alerta_parto" ? "#EF9A9A" : "#FFD54F"}`,
-              borderRadius: "8px",
-              padding: "10px 14px",
-              marginBottom: "6px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "18px",
+              color: "#888",
+              marginLeft: "8px",
             }}
           >
-            <span style={{ fontSize: "14px", color: "#333" }}>{n.mensaje}</span>
-            <button
-              onClick={() => cerrarNotificacion(n.id)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "18px",
-                color: "#888",
-                marginLeft: "8px",
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-    ) : null;
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  ) : null;
+};
 
   if (!usuario) return <Login onLogin={handleLogin} />;
 
@@ -272,9 +280,12 @@ function App() {
       : []),
     ...(usuario.rol === "admin" ? [["ventas", "💰 Ventas"]] : []),
     ...(["admin", "encargado_general"].includes(usuario.rol)
-      ? [["apartados", "📋 Apartados"]]
-      : []),
-    ...(["admin", "encargado_general"].includes(usuario.rol)
+  ? [["apartados", "📋 Apartados"]]
+  : []),
+...(["admin", "encargado_general", "gestacion"].includes(usuario.rol)
+  ? [["reproductores", "🐷 Reproductores"]]
+  : []),
+...(["admin", "encargado_general"].includes(usuario.rol)
   ? [
       [
         "configuracion",
@@ -359,7 +370,8 @@ function App() {
         />
       )}
       {pagina === "apartados" && <Apartados usuario={usuario} />}
-      {pagina === "semana" && <Semana usuario={usuario} />}
+{pagina === "reproductores" && <Reproductores usuario={usuario} />}
+{pagina === "semana" && <Semana usuario={usuario} />}
     </>
   );
 
