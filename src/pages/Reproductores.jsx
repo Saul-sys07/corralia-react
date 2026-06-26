@@ -74,11 +74,12 @@ function Reproductores({ usuario }) {
             setMensaje={setMensaje}
           />
           <ListaReproductores
-            reproductores={reproductores}
-            usuario={usuario}
-            onRefresh={cargar}
-            setMensaje={setMensaje}
-          />
+  reproductores={reproductores}
+  usuario={usuario}
+  corrales={corrales}
+  onRefresh={cargar}
+  setMensaje={setMensaje}
+/>
         </>
       )}
 
@@ -250,8 +251,9 @@ function NuevoReproductor({ corrales, onRefresh, setMensaje }) {
   );
 }
 
-function ListaReproductores({ reproductores, usuario, onRefresh, setMensaje }) {
+function ListaReproductores({ reproductores, usuario, corrales, onRefresh, setMensaje }) {
   const esAdmin = usuario?.rol === "admin";
+  const [editando, setEditando] = useState(null);
 
   const baja = async (id) => {
     if (!confirm("¿Dar de baja este reproductor?")) return;
@@ -260,6 +262,22 @@ function ListaReproductores({ reproductores, usuario, onRefresh, setMensaje }) {
     setTimeout(() => setMensaje(""), 3000);
     onRefresh();
   };
+
+  if (editando) {
+    return (
+      <EditarReproductor
+        reproductor={editando}
+        corrales={corrales}
+        onCancelar={() => setEditando(null)}
+        onGuardado={() => {
+          setEditando(null);
+          setMensaje("✅ Reproductor actualizado");
+          setTimeout(() => setMensaje(""), 3000);
+          onRefresh();
+        }}
+      />
+    );
+  }
 
   return (
     <div>
@@ -288,23 +306,196 @@ function ListaReproductores({ reproductores, usuario, onRefresh, setMensaje }) {
           </div>
 
           {esAdmin && (
-            <button
-              onClick={() => baja(r.id)}
-              style={{
-                padding: "7px 10px",
-                borderRadius: "6px",
-                border: "1px solid #C62828",
-                background: "#ffebee",
-                color: "#C62828",
-                fontWeight: "700",
-                cursor: "pointer",
-              }}
-            >
-              Baja
-            </button>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button
+                onClick={() => setEditando(r)}
+                style={{
+                  padding: "7px 10px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "#1976D2",
+                  color: "white",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                ✏️ Editar
+              </button>
+
+              <button
+                onClick={() => baja(r.id)}
+                style={{
+                  padding: "7px 10px",
+                  borderRadius: "6px",
+                  border: "1px solid #C62828",
+                  background: "#ffebee",
+                  color: "#C62828",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                }}
+              >
+                Baja
+              </button>
+            </div>
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+function EditarReproductor({ reproductor, corrales, onCancelar, onGuardado }) {
+  const [identificador, setIdentificador] = useState(reproductor.identificador || "");
+  const [arete, setArete] = useState(reproductor.arete || "");
+  const [tipo, setTipo] = useState(reproductor.tipo || "Pie de Cría");
+  const [razaLinea, setRazaLinea] = useState(reproductor.raza_linea || "");
+  const [idChiquero, setIdChiquero] = useState(reproductor.id_chiquero || "");
+  const [estado, setEstado] = useState(reproductor.estado || "Activo");
+  const [origen, setOrigen] = useState(reproductor.origen || "");
+  const [notas, setNotas] = useState(reproductor.notas || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const guardar = async () => {
+    if (!identificador || !tipo || !idChiquero) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await api.put(`/reproductores/${reproductor.id}`, {
+        identificador,
+        arete: arete || null,
+        tipo,
+        raza_linea: razaLinea || null,
+        id_chiquero: Number(idChiquero),
+        estado,
+        fecha_nacimiento: null,
+        origen: origen || null,
+        notas: notas || null,
+      });
+
+      onGuardado();
+    } catch (e) {
+      setError(e.response?.data?.detail || "Error al actualizar reproductor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={{ margin: "0 0 10px" }}>✏️ Editar reproductor</h3>
+
+      <label style={labelStyle}>Identificador temporal:</label>
+      <input
+        value={identificador}
+        onChange={(e) => setIdentificador(e.target.value)}
+        style={inputStyle}
+      />
+
+      <label style={labelStyle}>Arete:</label>
+      <input
+        value={arete}
+        onChange={(e) => setArete(e.target.value)}
+        placeholder="Ej: H-027"
+        style={inputStyle}
+      />
+
+      <label style={labelStyle}>Tipo:</label>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+        {TIPOS.map((t) => (
+          <button key={t} onClick={() => setTipo(t)} style={chipStyle(tipo === t)}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <label style={labelStyle}>Raza / línea:</label>
+      <input
+        value={razaLinea}
+        onChange={(e) => setRazaLinea(e.target.value)}
+        placeholder="Ej: Duroc, Yorkshire, Landrace, F1, desconocida"
+        style={inputStyle}
+      />
+
+      <label style={labelStyle}>Corral actual:</label>
+      <select
+        value={idChiquero}
+        onChange={(e) => setIdChiquero(e.target.value)}
+        style={inputStyle}
+      >
+        <option value="">Selecciona corral</option>
+        {corrales.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.zona} — {c.nombre} ({c.tipo})
+          </option>
+        ))}
+      </select>
+
+      <label style={labelStyle}>Estado:</label>
+      <select
+        value={estado}
+        onChange={(e) => setEstado(e.target.value)}
+        style={inputStyle}
+      >
+        {ESTADOS.map((e) => (
+          <option key={e} value={e}>
+            {e}
+          </option>
+        ))}
+      </select>
+
+      <label style={labelStyle}>Origen:</label>
+      <input
+        value={origen}
+        onChange={(e) => setOrigen(e.target.value)}
+        style={inputStyle}
+      />
+
+      <label style={labelStyle}>Notas:</label>
+      <textarea
+        value={notas}
+        onChange={(e) => setNotas(e.target.value)}
+        style={{ ...inputStyle, minHeight: "70px" }}
+      />
+
+      {error && <p style={{ color: "#C62828" }}>{error}</p>}
+
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={guardar}
+          disabled={loading || !identificador || !idChiquero}
+          style={{
+            flex: 1,
+            padding: "12px",
+            background: loading || !identificador || !idChiquero ? "#ccc" : "#2E7D32",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          {loading ? "Guardando..." : "Guardar cambios"}
+        </button>
+
+        <button
+          onClick={onCancelar}
+          style={{
+            flex: 1,
+            padding: "12px",
+            background: "#f0f0f0",
+            color: "#555",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }
